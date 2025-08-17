@@ -35,6 +35,7 @@
     "dotted-map": "^2.2.3",
     "framer-motion": "^12.23.12",
     "input-otp": "^1.4.2",
+    "jose": "^6.0.12",
     "lucide-react": "^0.539.0",
     "motion": "^12.23.12",
     "next": "15.4.6",
