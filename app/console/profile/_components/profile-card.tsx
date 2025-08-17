@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/sonner"
 import { client } from "@/lib/auth/auth-client"
+import { captureEvent, captureClientError } from "@/lib/error-tracker-client"
 import { UserWithProvider } from "@/lib/types/api/user"
 import { Edit, Eye, EyeOff, Loader2, LogOut, Mail, Shield, ShieldOff } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -58,11 +59,31 @@ export function ProfileCard({ user, userDetails, isLoading }: ProfileCardProps) 
   const handleUpdateProfile = async () => {
     if (!editName.trim()) return
     setLoading(true)
+    
+    captureEvent('profile_update_attempt', {
+      field: 'name',
+      old_name_length: user.name?.length || 0,
+      new_name_length: editName.length,
+    })
+
     try {
       await client.updateUser({ name: editName })
+      
+      captureEvent('profile_update_success', {
+        field: 'name',
+        new_name_length: editName.length,
+      })
+      
       toast.success("Profile updated successfully")
       setShowEditProfile(false)
-    } catch {
+    } catch (error) {
+      captureClientError(error instanceof Error ? error : new Error("Failed to update profile"), {
+        source: 'profile-update',
+        additionalData: {
+          field: 'name',
+          new_name_length: editName.length,
+        },
+      })
       toast.error("Failed to update profile")
     } finally {
       setLoading(false)
@@ -71,26 +92,49 @@ export function ProfileCard({ user, userDetails, isLoading }: ProfileCardProps) 
 
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
+      captureEvent('password_change_validation_error', {
+        error_type: 'passwords_mismatch',
+      })
       toast.error("Passwords do not match")
       return
     }
     if (newPassword.length < 8) {
+      captureEvent('password_change_validation_error', {
+        error_type: 'password_too_short',
+        length: newPassword.length,
+      })
       toast.error("Password must be at least 8 characters")
       return
     }
+    
     setLoading(true)
+    captureEvent('password_change_attempt', {
+      revoke_other_sessions: false,
+    })
+
     try {
       await client.changePassword({
         currentPassword,
         newPassword,
         revokeOtherSessions: false,
       })
+      
+      captureEvent('password_change_success', {
+        revoke_other_sessions: false,
+      })
+      
       toast.success("Password changed successfully")
       setShowChangePassword(false)
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
-    } catch {
+    } catch (error) {
+      captureClientError(error instanceof Error ? error : new Error("Failed to change password"), {
+        source: 'password-change',
+        additionalData: {
+          revoke_other_sessions: false,
+        },
+      })
       toast.error("Failed to change password")
     } finally {
       setLoading(false)
@@ -170,10 +214,23 @@ export function ProfileCard({ user, userDetails, isLoading }: ProfileCardProps) 
 
   const handleSignOut = async () => {
     setLoading(true)
+    captureEvent('sign_out_attempt', {
+      user_id: userDetails?.id,
+    })
+
     try {
       await client.signOut()
+      captureEvent('sign_out_success', {
+        user_id: userDetails?.id,
+      })
       router.push("/")
-    } catch {
+    } catch (error) {
+      captureClientError(error instanceof Error ? error : new Error("Failed to sign out"), {
+        source: 'sign-out',
+        additionalData: {
+          user_id: userDetails?.id,
+        },
+      })
       toast.error("Failed to sign out")
     } finally {
       setLoading(false)

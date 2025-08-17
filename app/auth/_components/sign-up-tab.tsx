@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { PasswordStrength } from "@/components/ui/password-strength"
 import { toast } from "@/components/ui/sonner"
 import { signIn, signUp } from "@/lib/auth/auth-client"
+import { captureAuthError, captureEvent } from "@/lib/error-tracker-client"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
@@ -26,16 +27,31 @@ export function SignUpTab() {
     e.preventDefault()
 
     if (password !== confirmPassword) {
+      captureEvent('sign_up_validation_error', {
+        error_type: 'password_mismatch',
+        email_domain: email.split('@')[1] || 'unknown',
+      })
       toast.error("Passwords do not match")
       return
     }
 
     if (password.length < 8) {
+      captureEvent('sign_up_validation_error', {
+        error_type: 'password_too_short',
+        email_domain: email.split('@')[1] || 'unknown',
+      })
       toast.error("Password must be at least 8 characters long")
       return
     }
 
     setLoading(true)
+
+    captureEvent('sign_up_attempt', {
+      method: 'email',
+      email_domain: email.split('@')[1] || 'unknown',
+      has_first_name: firstName.length > 0,
+      has_last_name: lastName.length > 0,
+    })
 
     try {
       const redirect = new URLSearchParams(window.location.search).get("redirect")
@@ -48,11 +64,27 @@ export function SignUpTab() {
       })
 
       if (response.error) {
+        captureAuthError(new Error(response.error.message), 'email-signup', {
+          additionalData: {
+            email_domain: email.split('@')[1] || 'unknown',
+            error_code: response.error.code,
+          },
+        })
         toast.error(response.error.message)
       } else {
+        captureEvent('sign_up_success', {
+          method: 'email',
+          email_domain: email.split('@')[1] || 'unknown',
+          redirect_to_verification: true,
+        })
         router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
       }
     } catch (error) {
+      captureAuthError(error instanceof Error ? error : new Error("Failed to create account"), 'email-signup', {
+        additionalData: {
+          email_domain: email.split('@')[1] || 'unknown',
+        },
+      })
       toast.error(error instanceof Error ? error.message : "Failed to create account")
     } finally {
       setLoading(false)
@@ -61,13 +93,30 @@ export function SignUpTab() {
 
   const handleGoogleSignUp = async () => {
     setLoading(true)
+    
+    captureEvent('sign_up_attempt', {
+      method: 'google',
+      provider: 'google',
+    })
+
     try {
       const redirect = new URLSearchParams(window.location.search).get("redirect")
+      
+      captureEvent('social_sign_up_redirect', {
+        provider: 'google',
+        redirect_url: redirect || '/console',
+      })
+
       await signIn.social({
         provider: "google",
         callbackURL: redirect || "/console",
       })
     } catch (error) {
+      captureAuthError(error instanceof Error ? error : new Error("Failed to sign up with Google"), 'google-signup', {
+        additionalData: {
+          provider: 'google',
+        },
+      })
       toast.error(error instanceof Error ? error.message : "Failed to sign up with Google")
       setLoading(false)
     }

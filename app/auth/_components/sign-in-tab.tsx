@@ -9,6 +9,7 @@ import { LastUsedBadge } from "@/components/ui/last-used-badge"
 import { toast } from "@/components/ui/sonner"
 import { signIn } from "@/lib/auth/auth-client"
 import { getLastAuthMethod, saveLastAuthMethod, type AuthMethod } from "@/lib/auth/last-auth-method"
+import { captureAuthError, captureEvent } from "@/lib/error-tracker-client"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
@@ -31,6 +32,11 @@ export function SignInTab({ onSwitchToSignUp }: SignInTabProps) {
     e.preventDefault()
     setLoading(true)
 
+    captureEvent('sign_in_attempt', {
+      method: 'email',
+      email_domain: email.split('@')[1] || 'unknown',
+    })
+
     try {
       await signIn.email(
         {
@@ -40,11 +46,27 @@ export function SignInTab({ onSwitchToSignUp }: SignInTabProps) {
         {
           onSuccess: () => {
             saveLastAuthMethod("email")
+            captureEvent('sign_in_success', {
+              method: 'email',
+              email_domain: email.split('@')[1] || 'unknown',
+            })
             toast.success("Successfully signed in!")
           },
           onError: (ctx: unknown) => {
             const errorCtx = ctx as { error: { code?: string; message: string } }
+            
+            captureAuthError(new Error(errorCtx.error.message), 'email', {
+              additionalData: {
+                error_code: errorCtx.error.code,
+                email_domain: email.split('@')[1] || 'unknown',
+              },
+            })
+
             if (errorCtx.error.code === "TWO_FACTOR_REQUIRED") {
+              captureEvent('two_factor_required', {
+                method: 'email',
+                email_domain: email.split('@')[1] || 'unknown',
+              })
               window.location.href = "/auth/two-factor"
             } else {
               toast.error(errorCtx.error.message)
@@ -53,6 +75,11 @@ export function SignInTab({ onSwitchToSignUp }: SignInTabProps) {
         }
       )
     } catch (error) {
+      captureAuthError(error instanceof Error ? error : new Error("Failed to sign in"), 'email', {
+        additionalData: {
+          email_domain: email.split('@')[1] || 'unknown',
+        },
+      })
       toast.error(error instanceof Error ? error.message : "Failed to sign in")
     } finally {
       setLoading(false)
@@ -61,14 +88,31 @@ export function SignInTab({ onSwitchToSignUp }: SignInTabProps) {
 
   const handleGoogleSignIn = async () => {
     setLoading(true)
+    
+    captureEvent('sign_in_attempt', {
+      method: 'google',
+      provider: 'google',
+    })
+
     try {
       saveLastAuthMethod("google")
       const redirect = new URLSearchParams(window.location.search).get("redirect")
+      
+      captureEvent('social_sign_in_redirect', {
+        provider: 'google',
+        redirect_url: redirect || '/console',
+      })
+
       await signIn.social({
         provider: "google",
         callbackURL: redirect || "/console",
       })
     } catch (error) {
+      captureAuthError(error instanceof Error ? error : new Error("Failed to sign in with Google"), 'google', {
+        additionalData: {
+          provider: 'google',
+        },
+      })
       toast.error(error instanceof Error ? error.message : "Failed to sign in with Google")
       setLoading(false)
     }
