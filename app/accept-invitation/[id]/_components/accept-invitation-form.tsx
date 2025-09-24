@@ -8,6 +8,7 @@ import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
 import { UserIcon } from "@/components/ui/icons/user"
 import { toast } from "@/components/ui/sonner"
 import { client } from "@/lib/auth/auth-client"
+import { captureEvent, captureClientError } from "@/lib/error-tracker-client"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
@@ -41,15 +42,39 @@ export function AcceptInvitationForm({ invitation }: AcceptInvitationFormProps) 
     setLoading(true)
     setError("")
 
+    captureEvent('invitation_action_attempt', {
+      action: 'accept',
+      invitation_id: invitation.id,
+      organization_name: invitation.organization.name,
+      role: invitation.role,
+    })
+
     try {
       await client.organization.acceptInvitation({
         invitationId: invitation.id,
+      })
+
+      captureEvent('invitation_action_success', {
+        action: 'accept',
+        invitation_id: invitation.id,
+        organization_name: invitation.organization.name,
+        role: invitation.role,
       })
 
       router.push("/console/profile")
       toast.success("Invitation accepted successfully!")
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Failed to accept invitation"
+      
+      captureClientError(err instanceof Error ? err : new Error(errorMessage), {
+        source: 'invitation-accept',
+        additionalData: {
+          invitation_id: invitation.id,
+          organization_name: invitation.organization.name,
+          role: invitation.role,
+        },
+      })
+
       setError(errorMessage)
       toast.error("Failed to accept invitation")
     } finally {
@@ -61,15 +86,39 @@ export function AcceptInvitationForm({ invitation }: AcceptInvitationFormProps) 
     setLoading(true)
     setError("")
 
+    captureEvent('invitation_action_attempt', {
+      action: 'reject',
+      invitation_id: invitation.id,
+      organization_name: invitation.organization.name,
+      role: invitation.role,
+    })
+
     try {
       await client.organization.rejectInvitation({
         invitationId: invitation.id,
+      })
+
+      captureEvent('invitation_action_success', {
+        action: 'reject',
+        invitation_id: invitation.id,
+        organization_name: invitation.organization.name,
+        role: invitation.role,
       })
 
       toast.success("Invitation declined")
       router.push("/console")
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Failed to reject invitation"
+      
+      captureClientError(err instanceof Error ? err : new Error(errorMessage), {
+        source: 'invitation-reject',
+        additionalData: {
+          invitation_id: invitation.id,
+          organization_name: invitation.organization.name,
+          role: invitation.role,
+        },
+      })
+
       setError(errorMessage)
       toast.error("Failed to decline invitation")
     } finally {

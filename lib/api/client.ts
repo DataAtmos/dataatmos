@@ -1,5 +1,6 @@
 import { API_CONFIG } from "./routes"
 import type { ApiResponse } from "./response"
+import { captureApiError, captureEvent } from "@/lib/error-tracker-client"
 
 let redirectTo429: (() => void) | null = null
 
@@ -30,8 +31,12 @@ export class ApiClient {
       options.timeout || API_CONFIG.DEFAULT_TIMEOUT
     )
 
+    const startTime = Date.now()
+    const fullUrl = this.baseUrl + url
+    const method = options.method || 'GET'
+
     try {
-      const response = await fetch(this.baseUrl + url, {
+      const response = await fetch(fullUrl, {
         ...options,
         headers: {
           ...this.defaultHeaders,
@@ -43,17 +48,45 @@ export class ApiClient {
       clearTimeout(timeoutId)
 
       const data: ApiResponse<T> = await response.json()
+      const duration = Date.now() - startTime
 
       if (!response.ok) {
         if (response.status === 429 && redirectTo429) {
+          captureEvent('rate_limit_redirect', {
+            url: fullUrl,
+            method,
+            duration_ms: duration,
+          })
           redirectTo429()
         }
-        throw new ApiError(data.error?.message || "Request failed", {
+
+        const apiError = new ApiError(data.error?.message || "Request failed", {
           status: response.status,
           code: data.error?.code || "UNKNOWN_ERROR",
           details: data.error?.details,
         })
+
+        // Track API errors
+        captureApiError(apiError, url, method, response.status, {
+          additionalData: {
+            duration_ms: duration,
+            retry_count: retryCount,
+            error_code: data.error?.code,
+            full_url: fullUrl,
+          },
+        })
+
+        throw apiError
       }
+
+      // Track successful API calls
+      captureEvent('api_call_success', {
+        url: fullUrl,
+        method,
+        status: response.status,
+        duration_ms: duration,
+        retry_count: retryCount,
+      })
 
       return data
     } catch (error) {
@@ -63,6 +96,14 @@ export class ApiClient {
         retryCount < API_CONFIG.RETRY_ATTEMPTS &&
         (error instanceof TypeError || (error as Error).name === "AbortError")
       ) {
+        // Track retry attempts
+        captureEvent('api_retry_attempt', {
+          url: fullUrl,
+          method,
+          retry_count: retryCount,
+          error_type: error instanceof TypeError ? 'TypeError' : 'AbortError',
+        })
+
         await new Promise(resolve => setTimeout(resolve, API_CONFIG.RETRY_DELAY * (retryCount + 1)))
         return this.request<T>(url, options, retryCount + 1)
       }
@@ -71,11 +112,23 @@ export class ApiClient {
         throw error
       }
 
-      throw new ApiError("Network error occurred", {
+      const networkError = new ApiError("Network error occurred", {
         status: 0,
         code: "NETWORK_ERROR",
         details: error,
       })
+
+      // Track network errors
+      captureApiError(networkError, url, method, 0, {
+        additionalData: {
+          duration_ms: Date.now() - startTime,
+          retry_count: retryCount,
+          original_error: error instanceof Error ? error.message : String(error),
+          full_url: fullUrl,
+        },
+      })
+
+      throw networkError
     }
   }
 

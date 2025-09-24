@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { captureServerError, captureServerEvent } from "@/lib/error-tracker-server"
 
 export interface ApiResponse<T = unknown> {
   success: boolean
@@ -65,6 +66,8 @@ export function createErrorResponse(
     status?: number
     details?: unknown
     requestId?: string
+    trackError?: boolean
+    context?: Record<string, unknown>
   }
 ): NextResponse<ApiResponse> {
   const response: ApiResponse = {
@@ -81,6 +84,20 @@ export function createErrorResponse(
   }
 
   const statusCode = options?.status || getStatusCodeFromErrorCode(code)
+
+  if (options?.trackError !== false) {
+    captureServerError(new Error(message), {
+      source: 'api-error-response',
+      additionalData: {
+        error_code: code,
+        status_code: statusCode,
+        request_id: options?.requestId,
+        ...options?.context,
+      },
+    }).catch(error => {
+      console.error('Failed to track error in PostHog:', error)
+    })
+  }
 
   return NextResponse.json(response, {
     status: statusCode,
@@ -149,23 +166,57 @@ function getStatusCodeFromErrorCode(code: string): number {
 }
 
 export function withErrorHandling<T extends unknown[], R>(
-  handler: (...args: T) => Promise<NextResponse<ApiResponse<R>>>
+  handler: (...args: T) => Promise<NextResponse<ApiResponse<R>>>,
+  options?: {
+    source?: string
+    trackErrors?: boolean
+  }
 ) {
   return async (...args: T): Promise<NextResponse<ApiResponse<R>>> => {
+    const startTime = Date.now()
+    
     try {
-      return await handler(...args)
+      const result = await handler(...args)
+      
+      // Track successful API calls
+      if (options?.trackErrors !== false) {
+        captureServerEvent('api_call_success', {
+          source: options?.source || 'api-handler',
+          duration_ms: Date.now() - startTime,
+          endpoint: 'unknown', // Could be enhanced to get actual endpoint
+        }).catch(console.error)
+      }
+      
+      return result
     } catch (error) {
       console.error("API Error:", error)
 
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred"
+      const errorStack = error instanceof Error ? error.stack : undefined
+
+      // Track the error with context
+      if (options?.trackErrors !== false) {
+        captureServerError(error instanceof Error ? error : new Error(errorMessage), {
+          source: options?.source || 'api-handler',
+          additionalData: {
+            duration_ms: Date.now() - startTime,
+            endpoint: 'unknown', // Could be enhanced to get actual endpoint
+            error_type: error?.constructor?.name || 'unknown',
+          },
+        }).catch(console.error)
+      }
+
       if (error instanceof Error) {
-        return createErrorResponse(ERROR_CODES.INTERNAL_ERROR, "An unexpected error occurred", {
-          details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+        return createErrorResponse(ERROR_CODES.INTERNAL_ERROR, errorMessage, {
+          details: process.env.NODE_ENV === "development" ? errorStack : undefined,
+          trackError: false, // Already tracked above
         }) as NextResponse<ApiResponse<R>>
       }
 
       return createErrorResponse(
         ERROR_CODES.INTERNAL_ERROR,
-        "An unexpected error occurred"
+        "An unexpected error occurred",
+        { trackError: false } // Already tracked above
       ) as NextResponse<ApiResponse<R>>
     }
   }
