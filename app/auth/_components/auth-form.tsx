@@ -66,16 +66,17 @@ const SSO_PROVIDERS = {
 
 interface AuthFormProps {
   redirectTo: string
+  emailPrefill?: string
 }
 
-export function AuthForm({ redirectTo }: AuthFormProps) {
+export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
   const router = useRouter()
   const { setActive } = useClerk()
   const { signIn, errors: signInErrors } = useSignIn()
   const { signUp, errors: signUpErrors } = useSignUp()
   const [mode, setMode] = useState<"signin" | "signup">("signin")
   const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(emailPrefill)
   const [password, setPassword] = useState("")
   const [trustCode, setTrustCode] = useState("")
   const [loading, setLoading] = useState(false)
