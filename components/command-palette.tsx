@@ -48,24 +48,28 @@ export function CommandPalette() {
 
   const filteredPages = useMemo(() => {
     const isAuthenticated = !!isSignedIn
-    return navigationPages.filter(page => !(page.requiresAuth && !isAuthenticated))
+    return navigationPages.filter(page => {
+      if (page.group === "Auth" || page.href.startsWith("/auth")) return false
+      if (page.requiresAuth && !isAuthenticated) return false
+      return true
+    })
   }, [isSignedIn])
 
   const searchableItems = useMemo(() => {
     const items = [...filteredPages]
 
     aliases.forEach(alias => {
+      if (alias.target.startsWith("/auth")) return
       const targetPage = navigationPages.find(page => page.href === alias.target)
-      if (targetPage) {
-        const isAuthenticated = !!isSignedIn
-        if (targetPage.requiresAuth && !isAuthenticated) return
+      if (!targetPage) return
+      if (targetPage.group === "Auth") return
+      if (targetPage.requiresAuth && !isSignedIn) return
 
-        items.push({
-          ...targetPage,
-          title: alias.alias,
-          group: "Aliases",
-        })
-      }
+      items.push({
+        ...targetPage,
+        title: alias.alias,
+        group: "Aliases",
+      })
     })
 
     return items
@@ -83,7 +87,7 @@ export function CommandPalette() {
   )
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
+    <CommandDialog open={open} onOpenChange={setOpen} showCloseButton={false}>
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>

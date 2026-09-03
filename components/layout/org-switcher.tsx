@@ -51,11 +51,6 @@ function orgInitials(name: string) {
     .slice(0, 2)
 }
 
-function roleLabel(role: string | undefined) {
-  if (!role) return "Workspace"
-  return role.replace(/^org:/, "")
-}
-
 function clerkMessage(error: unknown) {
   if (error && typeof error === "object" && "errors" in error) {
     const first = (error as { errors?: { message?: string }[] }).errors?.[0]?.message
@@ -67,7 +62,7 @@ function clerkMessage(error: unknown) {
 
 export function OrgSwitcher() {
   const { isMobile } = useSidebar()
-  const { organization, membership, isLoaded: orgLoaded } = useOrganization()
+  const { organization, isLoaded: orgLoaded } = useOrganization()
   const { isLoaded, setActive, userMemberships, createOrganization } = useOrganizationList({
     userMemberships: { infinite: true },
   })
@@ -81,12 +76,9 @@ export function OrgSwitcher() {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton size="lg" disabled>
-            <Skeleton className="size-8 rounded-lg" />
-            <div className="grid flex-1 gap-1">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-3 w-16" />
-            </div>
+          <SidebarMenuButton disabled>
+            <Skeleton className="size-6 rounded-md" />
+            <Skeleton className="h-2.5 w-20" />
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
@@ -96,7 +88,6 @@ export function OrgSwitcher() {
   const memberships = userMemberships.data ?? []
   const activeName = organization?.name ?? "Select workspace"
   const activeImage = organization?.imageUrl
-  const activeRole = roleLabel(membership?.role)
 
   function goToWorkspace(org: { id: string; slug?: string | null }) {
     const { rest } = parseDashboardPath(pathname)
@@ -158,22 +149,20 @@ export function OrgSwitcher() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <SidebarMenuButton
-                size="lg"
-                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:p-1!"
               >
-                <Avatar className="size-8 rounded-lg">
+                <Avatar className="size-6 rounded-md">
                   <AvatarImage src={activeImage} alt={activeName} />
-                  <AvatarFallback className="rounded-lg">{orgInitials(activeName)}</AvatarFallback>
+                  <AvatarFallback className="rounded-md text-[10px]">
+                    {orgInitials(activeName)}
+                  </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{activeName}</span>
-                  <span className="truncate text-xs">{activeRole}</span>
-                </div>
+                <span className="truncate text-xs font-medium">{activeName}</span>
                 <ChevronsUpDown className="ml-auto" />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+              className="w-(--radix-dropdown-menu-trigger-width) min-w-48 rounded-md"
               align="start"
               side={isMobile ? "bottom" : "right"}
               sideOffset={4}
@@ -186,26 +175,26 @@ export function OrgSwitcher() {
                   <DropdownMenuItem
                     key={mem.organization.id}
                     onClick={() => void switchOrg(mem.organization)}
-                    className="gap-2 p-2"
+                    className="gap-2 text-xs"
                   >
-                    <Avatar className="size-6 rounded-md">
+                    <Avatar className="size-5 rounded-md">
                       <AvatarImage src={mem.organization.imageUrl} alt={mem.organization.name} />
                       <AvatarFallback className="rounded-md text-[10px]">
                         {orgInitials(mem.organization.name)}
                       </AvatarFallback>
                     </Avatar>
-                    {mem.organization.name}
+                    <span className="truncate">{mem.organization.name}</span>
                     {index < 9 ? <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut> : null}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem className="gap-2 p-2" onClick={() => setCreateOpen(true)}>
-                  <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
+                <DropdownMenuItem className="gap-2 text-xs" onClick={() => setCreateOpen(true)}>
+                  <div className="flex size-5 items-center justify-center rounded-md border bg-transparent">
                     <Plus />
                   </div>
-                  <div className="font-medium text-muted-foreground">Create workspace</div>
+                  <span className="text-muted-foreground">Create workspace</span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>

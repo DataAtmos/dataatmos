@@ -4,10 +4,6 @@ export interface Alias {
 }
 
 export const aliases: Alias[] = [
-  { alias: "login", target: "/auth" },
-  { alias: "signin", target: "/auth" },
-  { alias: "signup", target: "/auth" },
-  { alias: "register", target: "/auth" },
   { alias: "dashboard", target: "/dashboard" },
   { alias: "insights", target: "/dashboard/insights" },
   { alias: "monitoring", target: "/dashboard/monitoring" },

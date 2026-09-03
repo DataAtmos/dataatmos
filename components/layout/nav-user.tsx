@@ -44,12 +44,9 @@ export function NavUser() {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton size="lg" disabled>
-            <Skeleton className="size-8 rounded-lg" />
-            <div className="grid flex-1 gap-1">
-              <Skeleton className="h-3 w-20" />
-              <Skeleton className="h-3 w-28" />
-            </div>
+          <SidebarMenuButton disabled>
+            <Skeleton className="size-6 rounded-md" />
+            <Skeleton className="h-2.5 w-16" />
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
@@ -75,17 +72,13 @@ export function NavUser() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:p-1!"
             >
-              <Avatar className="size-8 rounded-lg">
+              <Avatar className="size-6 rounded-md">
                 <AvatarImage src={user.imageUrl} alt={name} />
-                <AvatarFallback className="rounded-lg">{initials(name)}</AvatarFallback>
+                <AvatarFallback className="rounded-md text-[10px]">{initials(name)}</AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{name}</span>
-                <span className="truncate text-xs">{email}</span>
-              </div>
+              <span className="truncate text-xs font-medium">{name}</span>
               <ChevronsUpDown className="ml-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
@@ -97,14 +90,16 @@ export function NavUser() {
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar className="size-8 rounded-lg">
+                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-xs">
+                  <Avatar className="size-6 rounded-md">
                     <AvatarImage src={user.imageUrl} alt={name} />
-                    <AvatarFallback className="rounded-lg">{initials(name)}</AvatarFallback>
+                    <AvatarFallback className="rounded-md text-[10px]">
+                      {initials(name)}
+                    </AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
+                  <div className="grid flex-1 text-left text-xs leading-tight">
                     <span className="truncate font-medium">{name}</span>
-                    <span className="truncate text-xs">{email}</span>
+                    <span className="truncate text-muted-foreground">{email}</span>
                   </div>
                 </div>
               </DropdownMenuLabel>

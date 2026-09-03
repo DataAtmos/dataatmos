@@ -8,7 +8,7 @@ export function AuthShell({
 }: {
   title: string
   description?: string
-  children: React.ReactNode
+  children?: React.ReactNode
 }) {
   return (
     <div className="w-full max-w-[320px] flex flex-col items-center text-center">
