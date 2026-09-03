@@ -1,5 +1,8 @@
 "use client"
 
+import { useAuth } from "@clerk/nextjs"
+import { useRouter } from "next/navigation"
+import { useEffect, useMemo, useState } from "react"
 import {
   CommandDialog,
   CommandEmpty,
@@ -8,16 +11,14 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import { useSession } from "@/lib/auth/auth-client"
-import { navigationPages, type NavigationPage } from "@/lib/configs/navigation"
+import { workspacePath } from "@/lib/auth/workspace"
+import { type NavigationPage, navigationPages } from "@/lib/configs/navigation"
 import { aliases } from "@/lib/configs/navigation-aliases"
-import { useRouter } from "next/navigation"
-import { useEffect, useMemo, useState } from "react"
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false)
   const router = useRouter()
-  const { data: session } = useSession()
+  const { isSignedIn, orgId, orgSlug } = useAuth()
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -36,14 +37,19 @@ export function CommandPalette() {
     command()
   }
 
+  const workspaceKeyValue = orgSlug || orgId
+
+  const resolveHref = (page: NavigationPage) => {
+    if (page.workspacePath !== undefined && workspaceKeyValue) {
+      return workspacePath(workspaceKeyValue, page.workspacePath)
+    }
+    return page.href
+  }
+
   const filteredPages = useMemo(() => {
-    const isAuthenticated = !!session?.user
-    return navigationPages.filter(page => {
-      if (page.requiresAuth && !isAuthenticated) return false
-      if (!page.requiresAuth || isAuthenticated) return true
-      return false
-    })
-  }, [session])
+    const isAuthenticated = !!isSignedIn
+    return navigationPages.filter(page => !(page.requiresAuth && !isAuthenticated))
+  }, [isSignedIn])
 
   const searchableItems = useMemo(() => {
     const items = [...filteredPages]
@@ -51,7 +57,7 @@ export function CommandPalette() {
     aliases.forEach(alias => {
       const targetPage = navigationPages.find(page => page.href === alias.target)
       if (targetPage) {
-        const isAuthenticated = !!session?.user
+        const isAuthenticated = !!isSignedIn
         if (targetPage.requiresAuth && !isAuthenticated) return
 
         items.push({
@@ -63,7 +69,7 @@ export function CommandPalette() {
     })
 
     return items
-  }, [filteredPages, session])
+  }, [filteredPages, isSignedIn])
 
   const groupedPages = searchableItems.reduce(
     (groups, page) => {
@@ -83,13 +89,13 @@ export function CommandPalette() {
         <CommandEmpty>No results found.</CommandEmpty>
         {Object.entries(groupedPages).map(([groupName, groupPages]) => (
           <CommandGroup key={groupName} heading={groupName}>
-            {groupPages.map((page, index) => {
+            {groupPages.map(page => {
               const IconComponent = page.icon
               return (
                 <CommandItem
-                  key={`${page.group}-${page.title}-${index}`}
+                  key={`${page.group}-${page.href}-${page.title}`}
                   value={page.title}
-                  onSelect={() => runCommand(() => router.push(page.href))}
+                  onSelect={() => runCommand(() => router.push(resolveHref(page)))}
                 >
                   <IconComponent size={16} />
                   <span>{page.title}</span>

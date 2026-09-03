@@ -1,15 +1,11 @@
 import { ArchiveIcon } from "@/components/ui/icons/archive"
 import { ChartLineIcon } from "@/components/ui/icons/chart-line"
-import { CircleDollarSignIcon } from "@/components/ui/icons/circle-dollar-sign"
 import { CogIcon } from "@/components/ui/icons/cog"
 import { HomeIcon } from "@/components/ui/icons/home"
 import { LayersIcon } from "@/components/ui/icons/layers"
 import { LockIcon } from "@/components/ui/icons/lock"
 import { MonitorCheckIcon } from "@/components/ui/icons/monitor-check"
-import { PenToolIcon } from "@/components/ui/icons/pen-tool"
 import { TerminalIcon } from "@/components/ui/icons/terminal"
-import { UserIcon } from "@/components/ui/icons/user"
-import { UsersIcon } from "@/components/ui/icons/users"
 
 export interface NavigationPage {
   title: string
@@ -17,20 +13,12 @@ export interface NavigationPage {
   icon: React.ComponentType<{ size?: number }>
   group: string
   requiresAuth?: boolean
+  workspacePath?: string
 }
 
 export const navigationPages: NavigationPage[] = [
-  // Marketing
   { title: "Home", href: "/", icon: HomeIcon, group: "Marketing", requiresAuth: false },
-  {
-    title: "Pricing",
-    href: "/pricing",
-    icon: CircleDollarSignIcon,
-    group: "Marketing",
-    requiresAuth: false,
-  },
 
-  // Auth
   { title: "Sign In", href: "/auth", icon: LockIcon, group: "Auth", requiresAuth: false },
   {
     title: "Forgot Password",
@@ -61,89 +49,52 @@ export const navigationPages: NavigationPage[] = [
     requiresAuth: false,
   },
 
-  // Console
-  { title: "Console", href: "/console", icon: TerminalIcon, group: "Console", requiresAuth: true },
-
-  // Profile
   {
-    title: "Profile",
-    href: "/console/profile",
-    icon: UserIcon,
-    group: "Profile",
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: TerminalIcon,
+    group: "Workspace",
     requiresAuth: true,
-  },
-
-  // Organization
-  {
-    title: "Organization Projects",
-    href: "/console/organization/projects",
-    icon: LayersIcon,
-    group: "Organization",
-    requiresAuth: true,
+    workspacePath: "",
   },
   {
-    title: "Organization People",
-    href: "/console/organization/people",
-    icon: UsersIcon,
-    group: "Organization",
-    requiresAuth: true,
-  },
-  {
-    title: "Organization Settings",
-    href: "/console/organization/settings",
-    icon: CogIcon,
-    group: "Organization",
-    requiresAuth: true,
-  },
-  {
-    title: "Organization Billing",
-    href: "/console/organization/billing",
-    icon: CircleDollarSignIcon,
-    group: "Organization",
-    requiresAuth: true,
-  },
-
-  // Project
-  {
-    title: "Project Dashboard",
-    href: "/console/project/dashboard",
+    title: "Insights",
+    href: "/dashboard/insights",
     icon: ChartLineIcon,
-    group: "Project",
+    group: "Workspace",
     requiresAuth: true,
+    workspacePath: "/insights",
   },
   {
-    title: "Project Editor",
-    href: "/console/project/editor",
-    icon: PenToolIcon,
-    group: "Project",
-    requiresAuth: true,
-  },
-  {
-    title: "Project Monitoring",
-    href: "/console/project/monitoring",
+    title: "Monitoring",
+    href: "/dashboard/monitoring",
     icon: MonitorCheckIcon,
-    group: "Project",
+    group: "Workspace",
     requiresAuth: true,
+    workspacePath: "/monitoring",
   },
   {
-    title: "Project Configurations",
-    href: "/console/project/configurations",
-    icon: CogIcon,
-    group: "Project",
+    title: "Cluster configuration",
+    href: "/dashboard/cluster-configuration",
+    icon: LayersIcon,
+    group: "Workspace",
     requiresAuth: true,
+    workspacePath: "/cluster-configuration",
   },
   {
-    title: "Project Backups",
-    href: "/console/project/backups",
+    title: "Backups",
+    href: "/dashboard/backups",
     icon: ArchiveIcon,
-    group: "Project",
+    group: "Workspace",
     requiresAuth: true,
+    workspacePath: "/backups",
   },
   {
-    title: "Project Settings",
-    href: "/console/project/settings",
+    title: "Settings",
+    href: "/dashboard/settings",
     icon: CogIcon,
-    group: "Project",
+    group: "Workspace",
     requiresAuth: true,
+    workspacePath: "/settings",
   },
 ]
