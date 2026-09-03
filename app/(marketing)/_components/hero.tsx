@@ -22,7 +22,7 @@ function HeroCta() {
   const signedIn = Boolean(isLoaded && isSignedIn)
 
   return (
-    <Button asChild className="h-7 px-3 text-xs shadow-sm sm:h-8 sm:px-4 sm:text-sm">
+    <Button asChild className="h-7 shrink-0 px-3 text-xs sm:h-8 sm:px-4 sm:text-sm">
       <Link href={signedIn ? "/dashboard" : "/auth"}>
         {signedIn ? "Go to Dashboard" : "Start for free"}
       </Link>
@@ -42,7 +42,7 @@ export function Hero() {
 
   return (
     <div className="relative min-h-full h-full overflow-y-auto lg:overflow-hidden scrollbar-none flex flex-col lg:flex-row bg-background text-foreground">
-      <div className="relative order-1 h-[12vh] min-h-22 w-full shrink-0 lg:order-2 lg:h-full lg:min-h-0 lg:w-1/2">
+      <div className="relative order-1 h-[10vh] min-h-[72px] w-full shrink-0 lg:order-2 lg:h-full lg:min-h-0 lg:w-1/2">
         <Dithering
           style={{ height: "100%", width: "100%" }}
           colorBack={isDark ? "hsl(0, 0%, 0%)" : "hsl(0, 0%, 95%)"}
@@ -56,17 +56,15 @@ export function Hero() {
           rotation={0}
           speed={0.22}
         />
-        <div className="absolute top-3 right-3 z-10 sm:top-4 sm:right-4 lg:top-6 lg:right-6">
-          <HeroCta />
-        </div>
       </div>
 
       <div className="w-full shrink-0 lg:shrink lg:w-1/2 lg:h-full lg:overflow-y-auto scrollbar-none order-2 lg:order-1 px-6 py-6 sm:px-8 lg:px-10 lg:py-8">
         <div className="marketing-copy marketing-landing-screen flex flex-col lg:min-h-full">
-          <header className="flex items-center justify-between shrink-0">
+          <header className="flex shrink-0 items-center justify-between gap-3">
             <Link href="/" aria-label="Data Atmos home">
               <Logo className="h-8 w-8 sm:h-9 sm:w-9" />
             </Link>
+            <HeroCta />
           </header>
 
           <div className="marketing-hero-stage">
