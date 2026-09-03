@@ -14,6 +14,8 @@ import { Logo } from "@/components/ui/logo"
 import { toast } from "@/components/ui/sonner"
 import { finishAuth } from "@/lib/auth/complete-auth"
 import { type AuthMethod, getLastAuthMethod, saveLastAuthMethod } from "@/lib/auth/last-auth-method"
+import { isUnknownNameParam, signupNamePayload } from "@/lib/auth/signup-name"
+import { rememberAuthRedirect, ssoCallbackUrl } from "@/lib/auth/sso"
 
 const GOOGLE_ICON = (
   <svg
@@ -64,24 +66,17 @@ const SSO_PROVIDERS = {
 
 interface AuthFormProps {
   redirectTo: string
+  emailPrefill?: string
 }
 
-function splitName(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  return {
-    firstName: parts[0] ?? "",
-    lastName: parts.slice(1).join(" ") || undefined,
-  }
-}
-
-export function AuthForm({ redirectTo }: AuthFormProps) {
+export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
   const router = useRouter()
   const { setActive } = useClerk()
   const { signIn, errors: signInErrors } = useSignIn()
   const { signUp, errors: signUpErrors } = useSignUp()
   const [mode, setMode] = useState<"signin" | "signup">("signin")
   const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(emailPrefill)
   const [password, setPassword] = useState("")
   const [trustCode, setTrustCode] = useState("")
   const [loading, setLoading] = useState(false)
@@ -103,6 +98,7 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
     ? signUpErrors?.fields?.emailAddress?.message ||
       signUpErrors?.fields?.password?.message ||
       signUpErrors?.fields?.firstName?.message ||
+      signUpErrors?.fields?.lastName?.message ||
       signUpErrors?.global?.[0]?.message
     : signInErrors?.fields?.identifier?.message ||
       signInErrors?.fields?.password?.message ||
@@ -121,13 +117,24 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
 
     try {
       if (isSignUp) {
-        const { firstName, lastName } = splitName(name)
-        const { error } = await signUp.password({
+        const namePayload = signupNamePayload(
+          [...signUp.requiredFields, ...signUp.optionalFields],
+          name
+        )
+        let { error } = await signUp.password({
           emailAddress: email,
           password,
-          firstName,
-          lastName,
+          ...namePayload,
         })
+
+        if (isUnknownNameParam(error)) {
+          const retry = await signUp.password({
+            emailAddress: email,
+            password,
+            unsafeMetadata: { fullName: name.trim() },
+          })
+          error = retry.error
+        }
 
         if (error) {
           toast.error(error.message || "Failed to create account")
@@ -212,22 +219,24 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
     const { strategy, label } = SSO_PROVIDERS[method]
     setLoading(true)
     try {
+      if (!signIn) {
+        toast.error(`Failed to continue with ${label}`)
+        setLoading(false)
+        return
+      }
       saveLastAuthMethod(method)
-      const flow = isSignUp ? signUp : signIn
-      const { error } = await flow.sso({
+      rememberAuthRedirect(redirectTo)
+      const { error } = await signIn.sso({
         strategy,
         redirectUrl: redirectTo,
-        redirectCallbackUrl: "/auth/sso-callback",
+        redirectCallbackUrl: ssoCallbackUrl(redirectTo),
       })
       if (error) {
         toast.error(error.message || `Failed to continue with ${label}`)
         setLoading(false)
       }
     } catch (error) {
-      const fallback = isSignUp
-        ? `Failed to sign up with ${label}`
-        : `Failed to sign in with ${label}`
-      toast.error(error instanceof Error ? error.message : fallback)
+      toast.error(error instanceof Error ? error.message : `Failed to continue with ${label}`)
       setLoading(false)
     }
   }

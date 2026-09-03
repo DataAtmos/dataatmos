@@ -2,7 +2,7 @@
 
 import { useClerk, useSignIn } from "@clerk/nextjs"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useState } from "react"
 import { AuthOtp } from "@/components/auth/auth-otp"
 import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
@@ -11,7 +11,11 @@ import { EyeOffIcon } from "@/components/ui/icons/eye-off"
 import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/sonner"
-import { finishAuth } from "@/lib/auth/complete-auth"
+
+function signInUrl(email: string | null) {
+  if (!email) return "/auth"
+  return `/auth?email=${encodeURIComponent(email)}`
+}
 
 function ResetPasswordContent() {
   const [password, setPassword] = useState("")
@@ -23,7 +27,22 @@ function ResetPasswordContent() {
   const searchParams = useSearchParams()
   const email = searchParams.get("email")
   const { signIn, errors } = useSignIn()
-  const { setActive } = useClerk()
+  const { signOut } = useClerk()
+  const router = useRouter()
+
+  const returnToSignIn = async () => {
+    try {
+      await signIn.reset()
+    } catch {
+      // Sign-in resource may already be cleared
+    }
+    try {
+      await signOut()
+    } catch {
+      // No active session after reset
+    }
+    router.replace(signInUrl(email))
+  }
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,19 +72,9 @@ function ResetPasswordContent() {
         return
       }
 
-      if (signIn.status === "complete") {
-        await signIn.finalize({
-          navigate: async ({ decorateUrl }) => {
-            setResetSuccess(true)
-            toast.success("Password reset successful!")
-            await finishAuth(setActive, decorateUrl, "/dashboard")
-          },
-        })
-        return
-      }
-
       setResetSuccess(true)
-      toast.success("Password reset successful!")
+      toast.success("Password reset successful. Sign in with your new password.")
+      await returnToSignIn()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to reset password")
     } finally {
@@ -75,9 +84,9 @@ function ResetPasswordContent() {
 
   if (resetSuccess) {
     return (
-      <AuthShell title="Password updated" description="You can now sign in with your new password">
+      <AuthShell title="Password updated" description="Taking you to sign in">
         <Button asChild className="mt-8 w-full">
-          <Link href="/auth">Continue to sign in</Link>
+          <Link href={signInUrl(email)}>Continue to sign in</Link>
         </Button>
       </AuthShell>
     )
