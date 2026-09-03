@@ -22,11 +22,29 @@ function HeroCta() {
   const signedIn = Boolean(isLoaded && isSignedIn)
 
   return (
-    <Button asChild className="h-7 shrink-0 px-3 text-xs sm:h-8 sm:px-4 sm:text-sm">
+    <Button
+      asChild
+      className="h-8 shrink-0 whitespace-nowrap px-3 text-xs sm:h-9 sm:px-4 sm:text-sm"
+    >
       <Link href={signedIn ? "/dashboard" : "/auth"}>
         {signedIn ? "Go to Dashboard" : "Start for free"}
       </Link>
     </Button>
+  )
+}
+
+function HeroHeader() {
+  return (
+    <header className="flex h-8 w-full min-w-0 shrink-0 flex-nowrap items-center justify-between gap-3 sm:h-9">
+      <Link
+        href="/"
+        aria-label="Data Atmos home"
+        className="inline-flex size-8 shrink-0 items-center justify-center leading-none sm:size-9"
+      >
+        <Logo className="size-8 sm:size-9" />
+      </Link>
+      <HeroCta />
+    </header>
   )
 }
 
@@ -60,12 +78,7 @@ export function Hero() {
 
       <div className="w-full shrink-0 lg:shrink lg:w-1/2 lg:h-full lg:overflow-y-auto scrollbar-none order-2 lg:order-1 px-6 py-6 sm:px-8 lg:px-10 lg:py-8">
         <div className="marketing-copy marketing-landing-screen flex flex-col lg:min-h-full">
-          <header className="flex shrink-0 items-center justify-between gap-3">
-            <Link href="/" aria-label="Data Atmos home">
-              <Logo className="h-8 w-8 sm:h-9 sm:w-9" />
-            </Link>
-            <HeroCta />
-          </header>
+          <HeroHeader />
 
           <div className="marketing-hero-stage">
             <HeroTitle />
