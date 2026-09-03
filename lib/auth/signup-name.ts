@@ -56,3 +56,14 @@ export function workspaceOwnerLabel(
   if (local) return `${local} workspace`
   return "My workspace"
 }
+
+export function nameFromOauthProfile(user: {
+  firstName?: string | null
+  lastName?: string | null
+  emailAddress?: string | null
+}) {
+  const fromProfile = [user.firstName, user.lastName].filter(Boolean).join(" ").trim()
+  if (fromProfile) return fromProfile
+  const local = user.emailAddress?.split("@")[0]
+  return local?.replace(/[._-]+/g, " ").trim() || ""
+}

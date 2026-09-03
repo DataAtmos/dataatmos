@@ -106,6 +106,8 @@ export default function RootLayout({
           <ClerkProvider
             signInUrl="/auth"
             signUpUrl="/auth"
+            signInFallbackRedirectUrl="/dashboard"
+            signUpFallbackRedirectUrl="/dashboard"
             taskUrls={{ "choose-organization": "/onboarding/organization" }}
           >
             <div className="h-full flex flex-col bg-background">{children}</div>

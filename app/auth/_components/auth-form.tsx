@@ -15,6 +15,7 @@ import { toast } from "@/components/ui/sonner"
 import { finishAuth } from "@/lib/auth/complete-auth"
 import { type AuthMethod, getLastAuthMethod, saveLastAuthMethod } from "@/lib/auth/last-auth-method"
 import { isUnknownNameParam, signupNamePayload } from "@/lib/auth/signup-name"
+import { rememberAuthRedirect, ssoCallbackUrl } from "@/lib/auth/sso"
 
 const GOOGLE_ICON = (
   <svg
@@ -217,22 +218,24 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
     const { strategy, label } = SSO_PROVIDERS[method]
     setLoading(true)
     try {
+      if (!signIn) {
+        toast.error(`Failed to continue with ${label}`)
+        setLoading(false)
+        return
+      }
       saveLastAuthMethod(method)
-      const flow = isSignUp ? signUp : signIn
-      const { error } = await flow.sso({
+      rememberAuthRedirect(redirectTo)
+      const { error } = await signIn.sso({
         strategy,
         redirectUrl: redirectTo,
-        redirectCallbackUrl: "/auth/sso-callback",
+        redirectCallbackUrl: ssoCallbackUrl(redirectTo),
       })
       if (error) {
         toast.error(error.message || `Failed to continue with ${label}`)
         setLoading(false)
       }
     } catch (error) {
-      const fallback = isSignUp
-        ? `Failed to sign up with ${label}`
-        : `Failed to sign in with ${label}`
-      toast.error(error instanceof Error ? error.message : fallback)
+      toast.error(error instanceof Error ? error.message : `Failed to continue with ${label}`)
       setLoading(false)
     }
   }
