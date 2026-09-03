@@ -14,6 +14,7 @@ import { Logo } from "@/components/ui/logo"
 import { toast } from "@/components/ui/sonner"
 import { finishAuth } from "@/lib/auth/complete-auth"
 import { type AuthMethod, getLastAuthMethod, saveLastAuthMethod } from "@/lib/auth/last-auth-method"
+import { isUnknownNameParam, signupNamePayload } from "@/lib/auth/signup-name"
 
 const GOOGLE_ICON = (
   <svg
@@ -66,14 +67,6 @@ interface AuthFormProps {
   redirectTo: string
 }
 
-function splitName(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  return {
-    firstName: parts[0] ?? "",
-    lastName: parts.slice(1).join(" ") || undefined,
-  }
-}
-
 export function AuthForm({ redirectTo }: AuthFormProps) {
   const router = useRouter()
   const { setActive } = useClerk()
@@ -103,6 +96,7 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
     ? signUpErrors?.fields?.emailAddress?.message ||
       signUpErrors?.fields?.password?.message ||
       signUpErrors?.fields?.firstName?.message ||
+      signUpErrors?.fields?.lastName?.message ||
       signUpErrors?.global?.[0]?.message
     : signInErrors?.fields?.identifier?.message ||
       signInErrors?.fields?.password?.message ||
@@ -121,13 +115,24 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
 
     try {
       if (isSignUp) {
-        const { firstName, lastName } = splitName(name)
-        const { error } = await signUp.password({
+        const namePayload = signupNamePayload(
+          [...signUp.requiredFields, ...signUp.optionalFields],
+          name
+        )
+        let { error } = await signUp.password({
           emailAddress: email,
           password,
-          firstName,
-          lastName,
+          ...namePayload,
         })
+
+        if (isUnknownNameParam(error)) {
+          const retry = await signUp.password({
+            emailAddress: email,
+            password,
+            unsafeMetadata: { fullName: name.trim() },
+          })
+          error = retry.error
+        }
 
         if (error) {
           toast.error(error.message || "Failed to create account")

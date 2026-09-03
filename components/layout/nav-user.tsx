@@ -24,6 +24,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/sonner"
 import { ThemeSwitcher } from "@/components/ui/theme-switcher"
+import { accountDisplayName } from "@/lib/auth/signup-name"
 
 function initials(name: string) {
   return name
@@ -53,7 +54,7 @@ export function NavUser() {
     )
   }
 
-  const name = user.fullName || user.firstName || "Account"
+  const name = accountDisplayName(user)
   const email = user.primaryEmailAddress?.emailAddress || ""
 
   async function handleSignOut() {
@@ -71,9 +72,7 @@ export function NavUser() {
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:p-1!"
-            >
+            <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:p-1!">
               <Avatar className="size-6 rounded-md">
                 <AvatarImage src={user.imageUrl} alt={name} />
                 <AvatarFallback className="rounded-md text-[10px]">{initials(name)}</AvatarFallback>
