@@ -7,6 +7,8 @@ import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/lib/providers/theme-provider"
 import "./globals.css"
 
+const THEME_INIT = `(function(){try{var d=document.documentElement;var t=localStorage.getItem("dataatmos-theme");var dark=window.matchMedia("(prefers-color-scheme: dark)").matches;var n=t==="light"||t==="dark"?t:(dark?"dark":"light");d.classList.add(n);d.style.colorScheme=n}catch(e){}})()`
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -92,24 +94,28 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+      </head>
       <body className="antialiased h-full font-sans">
-        <ClerkProvider
-          signInUrl="/auth"
-          signUpUrl="/auth"
-          taskUrls={{ "choose-organization": "/onboarding/organization" }}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+          storageKey="dataatmos-theme"
         >
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
+          <ClerkProvider
+            signInUrl="/auth"
+            signUpUrl="/auth"
+            taskUrls={{ "choose-organization": "/onboarding/organization" }}
           >
             <div className="h-full flex flex-col bg-background">{children}</div>
             <Toaster />
             <Analytics />
             <SpeedInsights />
-          </ThemeProvider>
-        </ClerkProvider>
+          </ClerkProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

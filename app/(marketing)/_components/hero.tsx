@@ -17,9 +17,21 @@ const X_URL = "https://x.com/dataatmos"
 const socialLinkClass =
   "text-sm font-mono text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
 
+function HeroCta() {
+  const { isLoaded, isSignedIn } = useAuth()
+  const signedIn = Boolean(isLoaded && isSignedIn)
+
+  return (
+    <Button asChild className="h-7 px-3 text-xs shadow-sm sm:h-8 sm:px-4 sm:text-sm">
+      <Link href={signedIn ? "/dashboard" : "/auth"}>
+        {signedIn ? "Go to Dashboard" : "Start for free"}
+      </Link>
+    </Button>
+  )
+}
+
 export function Hero() {
   const { resolvedTheme } = useTheme()
-  const { isSignedIn } = useAuth()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -27,11 +39,10 @@ export function Hero() {
   }, [])
 
   const isDark = !mounted || resolvedTheme !== "light"
-  const dashboardHref = mounted && isSignedIn ? "/dashboard" : "/auth"
 
   return (
     <div className="relative min-h-full h-full overflow-y-auto lg:overflow-hidden scrollbar-none flex flex-col lg:flex-row bg-background text-foreground">
-      <div className="w-full h-[10vh] min-h-[72px] shrink-0 lg:h-full lg:min-h-0 lg:w-1/2 relative order-1 lg:order-2">
+      <div className="relative order-1 h-[12vh] min-h-22 w-full shrink-0 lg:order-2 lg:h-full lg:min-h-0 lg:w-1/2">
         <Dithering
           style={{ height: "100%", width: "100%" }}
           colorBack={isDark ? "hsl(0, 0%, 0%)" : "hsl(0, 0%, 95%)"}
@@ -45,6 +56,9 @@ export function Hero() {
           rotation={0}
           speed={0.22}
         />
+        <div className="absolute top-3 right-3 z-10 sm:top-4 sm:right-4 lg:top-6 lg:right-6">
+          <HeroCta />
+        </div>
       </div>
 
       <div className="w-full shrink-0 lg:shrink lg:w-1/2 lg:h-full lg:overflow-y-auto scrollbar-none order-2 lg:order-1 px-6 py-6 sm:px-8 lg:px-10 lg:py-8">
@@ -53,9 +67,6 @@ export function Hero() {
             <Link href="/" aria-label="Data Atmos home">
               <Logo className="h-8 w-8 sm:h-9 sm:w-9" />
             </Link>
-            <Button size="lg" asChild>
-              <Link href={dashboardHref}>Dashboard</Link>
-            </Button>
           </header>
 
           <div className="marketing-hero-stage">
@@ -126,18 +137,16 @@ export function Hero() {
           </section>
         </div>
 
-        <div className="flex items-center justify-between gap-4 mt-14">
-          <div className="flex items-center gap-5">
-            <Link href="/auth" className="text-sm font-mono text-primary hover:text-primary/80">
-              Start for Free
-            </Link>
+        <div className="mt-14 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
             <Link
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
               className={socialLinkClass}
             >
-              github.com/DataAtmos
+              <span className="sm:hidden">GitHub</span>
+              <span className="hidden sm:inline">github.com/DataAtmos</span>
             </Link>
             <Link
               href={X_URL}
@@ -145,7 +154,8 @@ export function Hero() {
               rel="noopener noreferrer"
               className={socialLinkClass}
             >
-              x.com/dataatmos
+              <span className="sm:hidden">X</span>
+              <span className="hidden sm:inline">x.com/dataatmos</span>
             </Link>
           </div>
           <ThemeSwitcher />
