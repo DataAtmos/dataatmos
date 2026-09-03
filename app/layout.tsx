@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     siteName: "Data Atmos",
     images: [
       {
-        url: "https://raghu.app/api/og?title=Data+Atmos:+The+single+platform+for+all+your+data+needs",
+        url: "/og.png",
         width: 1200,
         height: 630,
         alt: "Data Atmos – The single platform for all your data needs",
@@ -48,9 +48,7 @@ export const metadata: Metadata = {
     title: "Data Atmos – The single platform for all your data needs",
     description:
       "Managed databases, real-time analytics, data connectors and AI workloads in one platform.",
-    images: [
-      "https://raghu.app/api/og?title=Data+Atmos:+The+single+platform+for+all+your+data+needs",
-    ],
+    images: ["/og.png"],
     creator: "@dataatmos",
   },
   alternates: {
