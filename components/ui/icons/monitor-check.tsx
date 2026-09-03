@@ -1,7 +1,7 @@
 "use client"
 
-import { motion, useAnimation } from "motion/react"
 import type { Variants } from "motion/react"
+import { motion, useAnimation } from "motion/react"
 import type { HTMLAttributes } from "react"
 import { forwardRef, useCallback, useImperativeHandle, useRef } from "react"
 import { cn } from "@/lib/utils/common"
@@ -74,9 +74,12 @@ const MonitorCheckIcon = forwardRef<MonitorCheckIconHandle, MonitorCheckIconProp
         className={cn(className)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        role="img"
+        aria-hidden="true"
         {...props}
       >
         <svg
+          aria-hidden="true"
           xmlns="http://www.w3.org/2000/svg"
           width={size}
           height={size}

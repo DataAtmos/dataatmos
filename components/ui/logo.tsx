@@ -1,8 +1,5 @@
-"use client"
-
 import Image from "next/image"
-import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
+import { cn } from "@/lib/utils/common"
 
 interface LogoProps {
   width?: number
@@ -17,22 +14,22 @@ export function Logo({
   className = "h-6 w-6 sm:h-7 sm:w-7 transition-transform duration-200 group-hover:scale-110",
   alt = "Data Atmos",
 }: LogoProps) {
-  const { resolvedTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const logoSrc = mounted && resolvedTheme === "dark" ? "/logo-white.svg" : "/logo.svg"
-
   return (
-    <Image
-      src={logoSrc || "/logo.svg"}
-      alt={alt}
-      width={width}
-      height={height}
-      className={className}
-    />
+    <span className="inline-grid">
+      <Image
+        src="/logo.svg"
+        alt={alt}
+        width={width}
+        height={height}
+        className={cn("col-start-1 row-start-1 dark:hidden", className)}
+      />
+      <Image
+        src="/logo-white.svg"
+        alt=""
+        width={width}
+        height={height}
+        className={cn("col-start-1 row-start-1 hidden dark:block", className)}
+      />
+    </span>
   )
 }

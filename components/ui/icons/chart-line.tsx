@@ -72,9 +72,12 @@ const ChartLineIcon = forwardRef<ChartLineIconHandle, ChartLineIconProps>(
         className={cn(className)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        role="img"
+        aria-hidden="true"
         {...props}
       >
         <svg
+          aria-hidden="true"
           xmlns="http://www.w3.org/2000/svg"
           width={size}
           height={size}

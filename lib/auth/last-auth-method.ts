@@ -1,4 +1,4 @@
-export type AuthMethod = "email" | "google" | "passkey"
+export type AuthMethod = "email" | "google" | "microsoft"
 
 const LAST_AUTH_METHOD_KEY = "last-auth-method"
 
@@ -14,23 +14,4 @@ export function getLastAuthMethod(): AuthMethod | null {
     return method as AuthMethod | null
   }
   return null
-}
-
-export function clearLastAuthMethod(): void {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem(LAST_AUTH_METHOD_KEY)
-  }
-}
-
-export function getAuthMethodLabel(method: AuthMethod): string {
-  switch (method) {
-    case "email":
-      return "Email & Password"
-    case "google":
-      return "Google"
-    case "passkey":
-      return "Passkey"
-    default:
-      return ""
-  }
 }
