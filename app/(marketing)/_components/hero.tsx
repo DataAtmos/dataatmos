@@ -44,6 +44,21 @@ function HeroHeader() {
   )
 }
 
+function HeroHeader() {
+  return (
+    <header className="flex h-8 w-full min-w-0 shrink-0 flex-nowrap items-center justify-between gap-3 sm:h-9">
+      <Link
+        href="/"
+        aria-label="Data Atmos home"
+        className="inline-flex size-8 shrink-0 items-center justify-center leading-none sm:size-9"
+      >
+        <Logo className="size-8 sm:size-9" />
+      </Link>
+      <HeroCta />
+    </header>
+  )
+}
+
 export function Hero() {
   const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
