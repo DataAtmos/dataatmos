@@ -8,6 +8,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/ui/logo"
 import { ThemeSwitcher } from "@/components/ui/theme-switcher"
+import { AwsWord, ClickHouseWord, PostgresWord } from "./brand-word"
 import { HeroTitle } from "./hero-title"
 import "./hero.css"
 
@@ -78,9 +79,9 @@ export function Hero() {
               either way.
             </p>
             <p>
-              We are building. Our first release will support PostgreSQL on AWS in us-east-1 and
-              ap-south-2, with analytics powered by ClickHouse. More databases, clouds and regions
-              will follow.
+              We are building. Our first release will support <PostgresWord /> on <AwsWord /> in
+              us-east-1 and ap-south-2, with analytics powered by <ClickHouseWord />. More
+              databases, clouds and regions will follow.
             </p>
           </div>
         </div>

@@ -119,6 +119,24 @@
   margin-top: 0;
 }
 
+.marketing-brand-word {
+  display: inline;
+  white-space: nowrap;
+}
+
+.marketing-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15em;
+  height: 1.15em;
+  margin-right: 0.28em;
+  vertical-align: -0.2em;
+  overflow: hidden;
+  border-radius: 999px;
+  background: transparent;
+}
+
 .marketing-copy p {
   margin: 0.85em 0 0;
   font-size: var(--copy-size);
