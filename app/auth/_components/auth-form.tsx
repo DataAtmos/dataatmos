@@ -71,7 +71,8 @@ interface AuthFormProps {
 
 export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
   const router = useRouter()
-  const { setActive } = useClerk()
+  const clerk = useClerk()
+  const { setActive } = clerk
   const { signIn, errors: signInErrors } = useSignIn()
   const { signUp, errors: signUpErrors } = useSignUp()
   const [mode, setMode] = useState<"signin" | "signup">("signin")
@@ -83,16 +84,28 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [needsTrust, setNeedsTrust] = useState(false)
   const [lastAuthMethod, setLastAuthMethod] = useState<AuthMethod | null>(null)
+  const [pending, setPending] = useState(false)
   const leaving = useRef(false)
 
   const isSignUp = mode === "signup"
 
   useEffect(() => {
     setLastAuthMethod(getLastAuthMethod())
-  }, [])
+    router.prefetch("/onboarding/organization")
+  }, [router])
+
+  const leave = () => {
+    leaving.current = true
+    setPending(true)
+  }
+
+  const stay = () => {
+    leaving.current = false
+    setPending(false)
+  }
 
   const afterAuth = async ({ decorateUrl }: { decorateUrl: (url: string) => string }) => {
-    await finishAuth(setActive, decorateUrl, redirectTo)
+    await finishAuth(setActive, decorateUrl, redirectTo, clerk.session?.lastActiveOrganizationId)
   }
 
   const fieldError = isSignUp
@@ -148,7 +161,7 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
             toast.error(sent.error.message || "Failed to send verification email")
             return
           }
-          leaving.current = true
+          leave()
           router.push(
             `/auth/verify-email?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(redirectTo)}`
           )
@@ -157,8 +170,12 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
 
         if (signUp.status === "complete") {
           saveLastAuthMethod("email")
-          leaving.current = true
-          await signUp.finalize({ navigate: afterAuth })
+          leave()
+          const finalized = await signUp.finalize({ navigate: afterAuth })
+          if (finalized.error) {
+            stay()
+            toast.error(finalized.error.message || "Failed to create account")
+          }
         }
         return
       }
@@ -174,7 +191,7 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
       }
 
       if (signIn.status === "needs_second_factor") {
-        leaving.current = true
+        leave()
         router.push(`/auth/two-factor?redirect=${encodeURIComponent(redirectTo)}`)
         return
       }
@@ -188,9 +205,12 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
 
       if (signIn.status === "complete") {
         saveLastAuthMethod("email")
-        toast.success("Successfully signed in!")
-        leaving.current = true
-        await signIn.finalize({ navigate: afterAuth })
+        leave()
+        const finalized = await signIn.finalize({ navigate: afterAuth })
+        if (finalized.error) {
+          stay()
+          toast.error(finalized.error.message || "Failed to sign in")
+        }
       }
     } catch (error) {
       const fallback = isSignUp ? "Failed to create account" : "Failed to sign in"
@@ -211,8 +231,12 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
       }
       if (signIn.status === "complete") {
         saveLastAuthMethod("email")
-        leaving.current = true
-        await signIn.finalize({ navigate: afterAuth })
+        leave()
+        const finalized = await signIn.finalize({ navigate: afterAuth })
+        if (finalized.error) {
+          stay()
+          toast.error(finalized.error.message || "Failed to verify")
+        }
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to verify")
@@ -245,6 +269,27 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
       toast.error(error instanceof Error ? error.message : `Failed to continue with ${label}`)
       setLoading(false)
     }
+  }
+
+  if (pending) {
+    return (
+      <div className="w-full max-w-[320px] flex flex-col items-center text-center">
+        <Link href="/" aria-label="Data Atmos home">
+          <Logo width={28} height={28} className="h-7 w-7" />
+        </Link>
+        <h1 className="mt-6 text-lg font-medium tracking-tight">
+          {needsTrust
+            ? "Verify this device"
+            : isSignUp
+              ? "Create your account"
+              : "Sign in to Data Atmos"}
+        </h1>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {isSignUp ? "Creating your account..." : "Signing you in..."}
+        </p>
+        <Spinner className="mt-8" />
+      </div>
+    )
   }
 
   if (needsTrust) {

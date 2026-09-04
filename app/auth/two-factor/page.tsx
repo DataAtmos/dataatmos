@@ -15,7 +15,8 @@ function TwoFactorContent() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const { signIn } = useSignIn()
-  const { setActive } = useClerk()
+  const clerk = useClerk()
+  const { setActive } = clerk
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect") || "/dashboard"
 
@@ -27,6 +28,7 @@ function TwoFactorContent() {
     }
 
     setLoading(true)
+    let done = false
     try {
       const { error } = await signIn.mfa.verifyTOTP({ code: totpCode })
 
@@ -36,11 +38,16 @@ function TwoFactorContent() {
       }
 
       if (signIn.status === "complete") {
+        done = true
         setSuccess(true)
-        toast.success("Two-factor authentication successful!")
         await signIn.finalize({
           navigate: async ({ decorateUrl }) => {
-            await finishAuth(setActive, decorateUrl, redirectTo)
+            await finishAuth(
+              setActive,
+              decorateUrl,
+              redirectTo,
+              clerk.session?.lastActiveOrganizationId
+            )
           },
         })
       } else {
@@ -49,7 +56,7 @@ function TwoFactorContent() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Invalid verification code")
     } finally {
-      setLoading(false)
+      if (!done) setLoading(false)
     }
   }
 

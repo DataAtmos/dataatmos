@@ -34,7 +34,7 @@ function SsoCallbackContent() {
     }
 
     const afterAuth = async ({ decorateUrl }: { decorateUrl: (url: string) => string }) => {
-      await finishAuth(setActive, decorateUrl, redirectTo)
+      await finishAuth(setActive, decorateUrl, redirectTo, clerk.session?.lastActiveOrganizationId)
     }
 
     const finalizeSignIn = async () => {
