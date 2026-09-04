@@ -6,6 +6,7 @@ import { Suspense, useRef, useState } from "react"
 import { AuthOtp } from "@/components/auth/auth-otp"
 import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
+import { PageLoader } from "@/components/ui/page-loader"
 import { toast } from "@/components/ui/sonner"
 import { Spinner } from "@/components/ui/spinner"
 import { completeVerifiedSignUp, continueSignUpPath } from "@/lib/auth/complete-signup"
@@ -34,11 +35,14 @@ function VerifyEmailContent() {
 
       leaving.current = true
       setPending(true)
+      router.prefetch("/onboarding/organization")
+      router.prefetch(redirectTo)
       const finished = await completeVerifiedSignUp({
         signUp,
         setActive,
         redirectTo,
         goContinue: () => router.replace(continueSignUpPath(redirectTo)),
+        navigate: url => router.replace(url),
       })
       if (finished.error) {
         leaving.current = false
@@ -71,11 +75,7 @@ function VerifyEmailContent() {
   }
 
   if (pending) {
-    return (
-      <AuthShell title="Check your email" description="Signing you in...">
-        <Spinner className="mt-8" />
-      </AuthShell>
-    )
+    return <PageLoader text="Signing you in..." />
   }
 
   return (
@@ -115,7 +115,7 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<AuthShell title="Check your email" description="Loading..." />}>
+    <Suspense fallback={<PageLoader text="Loading..." />}>
       <VerifyEmailContent />
     </Suspense>
   )

@@ -9,6 +9,7 @@ import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
 import { EyeOffIcon } from "@/components/ui/icons/eye-off"
 import { Input } from "@/components/ui/input"
+import { PageLoader } from "@/components/ui/page-loader"
 import { toast } from "@/components/ui/sonner"
 import { Spinner } from "@/components/ui/spinner"
 
@@ -161,7 +162,7 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<AuthShell title="Reset password" description="Loading..." />}>
+    <Suspense fallback={<PageLoader text="Loading..." />}>
       <ResetPasswordContent />
     </Suspense>
   )

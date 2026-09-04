@@ -1,11 +1,12 @@
 "use client"
 
 import { useClerk, useSignIn } from "@clerk/nextjs"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useState } from "react"
 import { AuthOtp } from "@/components/auth/auth-otp"
 import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
+import { PageLoader } from "@/components/ui/page-loader"
 import { toast } from "@/components/ui/sonner"
 import { Spinner } from "@/components/ui/spinner"
 import { finishAuth } from "@/lib/auth/complete-auth"
@@ -17,6 +18,7 @@ function TwoFactorContent() {
   const { signIn } = useSignIn()
   const clerk = useClerk()
   const { setActive } = clerk
+  const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect") || "/dashboard"
 
@@ -40,13 +42,16 @@ function TwoFactorContent() {
       if (signIn.status === "complete") {
         done = true
         setSuccess(true)
+        router.prefetch("/onboarding/organization")
+        router.prefetch(redirectTo)
         await signIn.finalize({
           navigate: async ({ decorateUrl }) => {
             await finishAuth(
               setActive,
               decorateUrl,
               redirectTo,
-              clerk.session?.lastActiveOrganizationId
+              clerk.session?.lastActiveOrganizationId,
+              url => router.replace(url)
             )
           },
         })
@@ -61,11 +66,7 @@ function TwoFactorContent() {
   }
 
   if (success) {
-    return (
-      <AuthShell title="Verified" description="Redirecting to the dashboard...">
-        <Spinner className="mt-8" />
-      </AuthShell>
-    )
+    return <PageLoader text="Signing you in..." />
   }
 
   return (
@@ -90,7 +91,7 @@ function TwoFactorContent() {
 
 export default function TwoFactorPage() {
   return (
-    <Suspense fallback={<AuthShell title="Two-factor" description="Loading..." />}>
+    <Suspense fallback={<PageLoader text="Loading..." />}>
       <TwoFactorContent />
     </Suspense>
   )

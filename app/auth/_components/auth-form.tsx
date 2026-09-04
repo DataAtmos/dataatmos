@@ -10,6 +10,7 @@ import { EyeOffIcon } from "@/components/ui/icons/eye-off"
 import { Input } from "@/components/ui/input"
 import { LastUsedBadge } from "@/components/ui/last-used-badge"
 import { Logo } from "@/components/ui/logo"
+import { PageLoader } from "@/components/ui/page-loader"
 import { toast } from "@/components/ui/sonner"
 import { Spinner } from "@/components/ui/spinner"
 import { finishAuth } from "@/lib/auth/complete-auth"
@@ -101,6 +102,7 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
     leaving.current = true
     setPending(true)
     router.prefetch("/onboarding/organization")
+    router.prefetch(redirectTo)
   }
 
   const stay = () => {
@@ -109,7 +111,13 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
   }
 
   const afterAuth = async ({ decorateUrl }: { decorateUrl: (url: string) => string }) => {
-    await finishAuth(setActive, decorateUrl, redirectTo, clerk.session?.lastActiveOrganizationId)
+    await finishAuth(
+      setActive,
+      decorateUrl,
+      redirectTo,
+      clerk.session?.lastActiveOrganizationId,
+      url => router.replace(url)
+    )
   }
 
   const fieldError = isSignUp
@@ -276,24 +284,7 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
   }
 
   if (pending) {
-    return (
-      <div className="w-full max-w-[320px] flex flex-col items-center text-center">
-        <Link href="/" aria-label="Data Atmos home">
-          <Logo width={28} height={28} className="h-7 w-7" />
-        </Link>
-        <h1 className="mt-6 text-lg font-medium tracking-tight">
-          {needsTrust
-            ? "Verify this device"
-            : isSignUp
-              ? "Create your account"
-              : "Sign in to Data Atmos"}
-        </h1>
-        <p className="mt-2 text-xs text-muted-foreground">
-          {isSignUp ? "Creating your account..." : "Signing you in..."}
-        </p>
-        <Spinner className="mt-8" />
-      </div>
-    )
+    return <PageLoader text={isSignUp ? "Creating your account..." : "Signing you in..."} />
   }
 
   if (needsTrust) {

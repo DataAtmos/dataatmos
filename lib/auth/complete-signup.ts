@@ -33,11 +33,13 @@ export async function completeVerifiedSignUp({
   setActive,
   redirectTo,
   goContinue,
+  navigate,
 }: {
   signUp: SignUpClient
   setActive: SetActive
   redirectTo: string
   goContinue: () => void
+  navigate?: (url: string) => void
 }) {
   if (signUp.status === "missing_requirements") {
     const applied = await applyMissingSignUpFields(signUp)
@@ -50,7 +52,7 @@ export async function completeVerifiedSignUp({
     saveLastAuthMethod("email")
     const { error } = await signUp.finalize({
       navigate: async ({ decorateUrl }) => {
-        await finishAuth(setActive, decorateUrl, redirectTo)
+        await finishAuth(setActive, decorateUrl, redirectTo, undefined, navigate)
       },
     })
     if (error) return { error: error.message || "Failed to create account" }

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
+import { PageLoader } from "@/components/ui/page-loader"
 import { ensureOrganization } from "@/lib/auth/ensure-organization"
 import { workspacePath } from "@/lib/auth/workspace"
 
@@ -31,18 +31,15 @@ export function OrganizationSetup() {
     })()
   }, [isLoaded, isSignedIn, router, setActive])
 
+  if (!error) {
+    return <PageLoader text="Creating your workspace..." />
+  }
+
   return (
-    <AuthShell
-      title={error ? "Workspace setup failed" : "Setting up workspace"}
-      description={error ?? "Creating your workspace..."}
-    >
-      {error ? (
-        <Button className="mt-8 w-full" onClick={() => window.location.reload()}>
-          Try again
-        </Button>
-      ) : (
-        <Spinner className="mt-8" />
-      )}
+    <AuthShell title="Workspace setup failed" description={error}>
+      <Button className="mt-8 w-full" onClick={() => window.location.reload()}>
+        Try again
+      </Button>
     </AuthShell>
   )
 }

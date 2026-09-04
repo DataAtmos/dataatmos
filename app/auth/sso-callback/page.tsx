@@ -3,9 +3,8 @@
 import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useRef } from "react"
-import { AuthShell } from "@/components/auth/auth-shell"
+import { PageLoader } from "@/components/ui/page-loader"
 import { toast } from "@/components/ui/sonner"
-import { Spinner } from "@/components/ui/spinner"
 import { finishAuth } from "@/lib/auth/complete-auth"
 import {
   AUTH_CONTINUE_PATH,
@@ -25,6 +24,11 @@ function SsoCallbackContent() {
   const redirectTo = searchParams.get("redirect") || readAuthRedirect()
 
   useEffect(() => {
+    router.prefetch("/onboarding/organization")
+    router.prefetch(redirectTo)
+  }, [redirectTo, router])
+
+  useEffect(() => {
     if (!clerk.loaded || !signIn || !signUp || hasRun.current) return
     hasRun.current = true
 
@@ -34,7 +38,13 @@ function SsoCallbackContent() {
     }
 
     const afterAuth = async ({ decorateUrl }: { decorateUrl: (url: string) => string }) => {
-      await finishAuth(setActive, decorateUrl, redirectTo, clerk.session?.lastActiveOrganizationId)
+      await finishAuth(
+        setActive,
+        decorateUrl,
+        redirectTo,
+        clerk.session?.lastActiveOrganizationId,
+        url => router.replace(url)
+      )
     }
 
     const finalizeSignIn = async () => {
@@ -156,16 +166,16 @@ function SsoCallbackContent() {
   }, [clerk, redirectTo, router, setActive, signIn, signUp])
 
   return (
-    <AuthShell title="Signing in" description="Finishing sign in...">
+    <>
       <div id="clerk-captcha" />
-      <Spinner className="mt-8" />
-    </AuthShell>
+      <PageLoader text="Signing you in..." />
+    </>
   )
 }
 
 export default function SsoCallbackPage() {
   return (
-    <Suspense fallback={<AuthShell title="Signing in" description="Finishing sign in..." />}>
+    <Suspense fallback={<PageLoader text="Signing you in..." />}>
       <SsoCallbackContent />
     </Suspense>
   )

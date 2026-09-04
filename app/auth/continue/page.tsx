@@ -6,6 +6,7 @@ import { Suspense, useEffect, useRef, useState } from "react"
 import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { PageLoader } from "@/components/ui/page-loader"
 import { toast } from "@/components/ui/sonner"
 import { Spinner } from "@/components/ui/spinner"
 import { finishAuth } from "@/lib/auth/complete-auth"
@@ -25,7 +26,7 @@ function ContinueSignUpContent() {
   const [needsName, setNeedsName] = useState(false)
 
   const afterAuth = async ({ decorateUrl }: { decorateUrl: (url: string) => string }) => {
-    await finishAuth(setActive, decorateUrl, redirectTo)
+    await finishAuth(setActive, decorateUrl, redirectTo, undefined, url => router.replace(url))
   }
 
   const resolveSignUp = async () => {
@@ -80,7 +81,9 @@ function ContinueSignUpContent() {
         if (signUp.status === "complete") {
           const { error } = await signUp.finalize({
             navigate: async ({ decorateUrl }) => {
-              await finishAuth(setActive, decorateUrl, redirectTo)
+              await finishAuth(setActive, decorateUrl, redirectTo, undefined, url =>
+                router.replace(url)
+              )
             },
           })
           if (error) {
@@ -156,10 +159,10 @@ function ContinueSignUpContent() {
 
   if (loading || !needsName) {
     return (
-      <AuthShell title="Finishing account" description="Creating your account...">
+      <>
         <div id="clerk-captcha" />
-        <Spinner className="mt-8" />
-      </AuthShell>
+        <PageLoader text="Creating your account..." />
+      </>
     )
   }
 
@@ -194,7 +197,7 @@ function ContinueSignUpContent() {
 
 export default function ContinueSignUpPage() {
   return (
-    <Suspense fallback={<AuthShell title="Finishing account" description="Loading..." />}>
+    <Suspense fallback={<PageLoader text="Loading..." />}>
       <ContinueSignUpContent />
     </Suspense>
   )
