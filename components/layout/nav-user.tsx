@@ -47,8 +47,8 @@ export function NavUser() {
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton disabled>
-            <Skeleton className="size-6 rounded-md" />
-            <Skeleton className="h-2.5 w-16" />
+            <Skeleton className="size-5 rounded-md" />
+            <Skeleton className="h-2 w-14" />
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
@@ -76,11 +76,11 @@ export function NavUser() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:p-1!">
-              <Avatar className="size-6 rounded-md">
+              <Avatar className="size-5 rounded-md">
                 <AvatarImage src={user?.imageUrl} alt={name} />
-                <AvatarFallback className="rounded-md text-[10px]">{initials(name)}</AvatarFallback>
+                <AvatarFallback className="rounded-md text-[9px]">{initials(name)}</AvatarFallback>
               </Avatar>
-              <span className="truncate text-xs font-medium">{name}</span>
+              <span className="truncate text-[11px] font-medium">{name}</span>
               <ChevronsUpDown className="ml-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
