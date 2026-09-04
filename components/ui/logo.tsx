@@ -15,20 +15,20 @@ export function Logo({
   alt = "Data Atmos",
 }: LogoProps) {
   return (
-    <span className="inline-grid">
+    <span className={cn("relative inline-flex shrink-0 overflow-hidden", className)}>
       <Image
         src="/logo.svg"
         alt={alt}
         width={width}
         height={height}
-        className={cn("col-start-1 row-start-1 dark:hidden", className)}
+        className="size-full dark:hidden"
       />
       <Image
         src="/logo-white.svg"
         alt=""
         width={width}
         height={height}
-        className={cn("col-start-1 row-start-1 hidden dark:block", className)}
+        className="absolute inset-0 hidden size-full dark:block"
       />
     </span>
   )
