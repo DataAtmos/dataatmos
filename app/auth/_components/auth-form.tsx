@@ -3,15 +3,15 @@
 import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { AuthOtp } from "@/components/auth/auth-otp"
 import { Button } from "@/components/ui/button"
 import { EyeOffIcon } from "@/components/ui/icons/eye-off"
-import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
 import { Input } from "@/components/ui/input"
 import { LastUsedBadge } from "@/components/ui/last-used-badge"
 import { Logo } from "@/components/ui/logo"
 import { toast } from "@/components/ui/sonner"
+import { Spinner } from "@/components/ui/spinner"
 import { finishAuth } from "@/lib/auth/complete-auth"
 import { type AuthMethod, getLastAuthMethod, saveLastAuthMethod } from "@/lib/auth/last-auth-method"
 import { isUnknownNameParam, signupNamePayload } from "@/lib/auth/signup-name"
@@ -83,6 +83,7 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [needsTrust, setNeedsTrust] = useState(false)
   const [lastAuthMethod, setLastAuthMethod] = useState<AuthMethod | null>(null)
+  const leaving = useRef(false)
 
   const isSignUp = mode === "signup"
 
@@ -147,6 +148,7 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
             toast.error(sent.error.message || "Failed to send verification email")
             return
           }
+          leaving.current = true
           router.push(
             `/auth/verify-email?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(redirectTo)}`
           )
@@ -155,6 +157,7 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
 
         if (signUp.status === "complete") {
           saveLastAuthMethod("email")
+          leaving.current = true
           await signUp.finalize({ navigate: afterAuth })
         }
         return
@@ -171,6 +174,7 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
       }
 
       if (signIn.status === "needs_second_factor") {
+        leaving.current = true
         router.push(`/auth/two-factor?redirect=${encodeURIComponent(redirectTo)}`)
         return
       }
@@ -185,13 +189,14 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
       if (signIn.status === "complete") {
         saveLastAuthMethod("email")
         toast.success("Successfully signed in!")
+        leaving.current = true
         await signIn.finalize({ navigate: afterAuth })
       }
     } catch (error) {
       const fallback = isSignUp ? "Failed to create account" : "Failed to sign in"
       toast.error(error instanceof Error ? error.message : fallback)
     } finally {
-      setLoading(false)
+      if (!leaving.current) setLoading(false)
     }
   }
 
@@ -206,12 +211,13 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
       }
       if (signIn.status === "complete") {
         saveLastAuthMethod("email")
+        leaving.current = true
         await signIn.finalize({ navigate: afterAuth })
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to verify")
     } finally {
-      setLoading(false)
+      if (!leaving.current) setLoading(false)
     }
   }
 
@@ -252,7 +258,7 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
         <form onSubmit={handleTrustVerify} className="mt-8 w-full space-y-3">
           <AuthOtp value={trustCode} onChange={setTrustCode} disabled={loading} autoFocus />
           <Button type="submit" className="w-full" disabled={loading || trustCode.length !== 6}>
-            {loading ? <LoaderPinwheelIcon size={12} /> : "Verify"}
+            {loading ? <Spinner /> : "Verify"}
           </Button>
         </form>
       </div>
@@ -324,7 +330,7 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? (
               <>
-                <LoaderPinwheelIcon size={12} />
+                <Spinner />
                 {isSignUp ? "Creating account..." : "Signing in..."}
               </>
             ) : isSignUp ? (

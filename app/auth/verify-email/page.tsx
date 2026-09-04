@@ -6,8 +6,8 @@ import { Suspense, useEffect, useRef, useState } from "react"
 import { AuthOtp } from "@/components/auth/auth-otp"
 import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
-import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
 import { toast } from "@/components/ui/sonner"
+import { Spinner } from "@/components/ui/spinner"
 import { completeVerifiedSignUp, continueSignUpPath } from "@/lib/auth/complete-signup"
 
 function VerifyEmailContent() {
@@ -21,10 +21,12 @@ function VerifyEmailContent() {
   const leaving = useRef(false)
   const [code, setCode] = useState("")
   const [loading, setLoading] = useState(false)
+  const [pending, setPending] = useState(false)
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn || leaving.current) return
     leaving.current = true
+    setPending(true)
     router.replace("/onboarding/organization")
   }, [isLoaded, isSignedIn, router])
 
@@ -39,6 +41,7 @@ function VerifyEmailContent() {
       }
 
       leaving.current = true
+      setPending(true)
       const finished = await completeVerifiedSignUp({
         signUp,
         setActive,
@@ -47,13 +50,15 @@ function VerifyEmailContent() {
       })
       if (finished.error) {
         leaving.current = false
+        setPending(false)
         toast.error(finished.error)
       }
     } catch (error) {
       leaving.current = false
+      setPending(false)
       toast.error(error instanceof Error ? error.message : "Failed to verify email")
     } finally {
-      setLoading(false)
+      if (!leaving.current) setLoading(false)
     }
   }
 
@@ -73,6 +78,14 @@ function VerifyEmailContent() {
     }
   }
 
+  if (pending) {
+    return (
+      <AuthShell title="Check your email" description="Signing you in...">
+        <Spinner className="mt-8" />
+      </AuthShell>
+    )
+  }
+
   return (
     <AuthShell
       title="Check your email"
@@ -86,7 +99,7 @@ function VerifyEmailContent() {
         <Button type="submit" className="w-full" disabled={loading || code.length !== 6}>
           {loading ? (
             <>
-              <LoaderPinwheelIcon size={12} />
+              <Spinner />
               Verifying...
             </>
           ) : (

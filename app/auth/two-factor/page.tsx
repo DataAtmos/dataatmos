@@ -6,8 +6,8 @@ import { Suspense, useState } from "react"
 import { AuthOtp } from "@/components/auth/auth-otp"
 import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
-import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
 import { toast } from "@/components/ui/sonner"
+import { Spinner } from "@/components/ui/spinner"
 import { finishAuth } from "@/lib/auth/complete-auth"
 
 function TwoFactorContent() {
@@ -56,7 +56,7 @@ function TwoFactorContent() {
   if (success) {
     return (
       <AuthShell title="Verified" description="Redirecting to the dashboard...">
-        <LoaderPinwheelIcon size={12} className="mt-8" />
+        <Spinner className="mt-8" />
       </AuthShell>
     )
   }
@@ -68,7 +68,7 @@ function TwoFactorContent() {
         <Button type="submit" className="w-full" disabled={loading || totpCode.length !== 6}>
           {loading ? (
             <>
-              <LoaderPinwheelIcon size={12} />
+              <Spinner />
               Verifying...
             </>
           ) : (

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
-import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
+import { Spinner } from "@/components/ui/spinner"
 import { ensureOrganization } from "@/lib/auth/ensure-organization"
 import { workspacePath } from "@/lib/auth/workspace"
 
@@ -43,7 +43,7 @@ export function OrganizationSetup() {
           Try again
         </Button>
       ) : (
-        <LoaderPinwheelIcon size={12} className="mt-8" />
+        <Spinner className="mt-8" />
       )}
     </AuthShell>
   )

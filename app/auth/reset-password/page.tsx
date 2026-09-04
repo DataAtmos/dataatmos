@@ -3,14 +3,14 @@
 import { useClerk, useSignIn } from "@clerk/nextjs"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Suspense, useState } from "react"
+import { Suspense, useRef, useState } from "react"
 import { AuthOtp } from "@/components/auth/auth-otp"
 import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
 import { EyeOffIcon } from "@/components/ui/icons/eye-off"
-import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/sonner"
+import { Spinner } from "@/components/ui/spinner"
 
 function signInUrl(email: string | null) {
   if (!email) return "/auth"
@@ -24,6 +24,7 @@ function ResetPasswordContent() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [resetSuccess, setResetSuccess] = useState(false)
+  const leaving = useRef(false)
   const searchParams = useSearchParams()
   const email = searchParams.get("email")
   const { signIn, errors } = useSignIn()
@@ -72,13 +73,14 @@ function ResetPasswordContent() {
         return
       }
 
+      leaving.current = true
       setResetSuccess(true)
       toast.success("Password reset successful. Sign in with your new password.")
       await returnToSignIn()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to reset password")
     } finally {
-      setLoading(false)
+      if (!leaving.current) setLoading(false)
     }
   }
 
@@ -144,7 +146,7 @@ function ResetPasswordContent() {
         >
           {loading ? (
             <>
-              <LoaderPinwheelIcon size={12} />
+              <Spinner />
               Resetting...
             </>
           ) : (

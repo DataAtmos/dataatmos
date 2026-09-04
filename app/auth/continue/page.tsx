@@ -5,9 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useRef, useState } from "react"
 import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
-import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/sonner"
+import { Spinner } from "@/components/ui/spinner"
 import { finishAuth } from "@/lib/auth/complete-auth"
 import { isUnknownNameParam, nameFromOauthProfile, signupNamePayload } from "@/lib/auth/signup-name"
 import { applyMissingSignUpFields, remainingSignUpGaps } from "@/lib/auth/sso"
@@ -19,6 +19,7 @@ function ContinueSignUpContent() {
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect") || "/dashboard"
   const autoTried = useRef(false)
+  const leaving = useRef(false)
   const [name, setName] = useState("")
   const [loading, setLoading] = useState(true)
   const [needsName, setNeedsName] = useState(false)
@@ -141,11 +142,15 @@ function ContinueSignUpContent() {
         toast.error(error.message || "Failed to create account")
         return
       }
-      await resolveSignUp()
+      const done = await resolveSignUp()
+      if (done) {
+        leaving.current = true
+        return
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to create account")
     } finally {
-      setLoading(false)
+      if (!leaving.current) setLoading(false)
     }
   }
 
@@ -153,7 +158,7 @@ function ContinueSignUpContent() {
     return (
       <AuthShell title="Finishing account" description="Creating your account...">
         <div id="clerk-captcha" />
-        <LoaderPinwheelIcon size={12} className="mt-8" />
+        <Spinner className="mt-8" />
       </AuthShell>
     )
   }
@@ -178,7 +183,7 @@ function ContinueSignUpContent() {
           </p>
         ) : null}
         <Button type="submit" className="w-full" disabled={loading || !name.trim()}>
-          {loading ? <LoaderPinwheelIcon size={12} /> : "Continue"}
+          {loading ? <Spinner /> : "Continue"}
         </Button>
       </form>
       <div id="clerk-captcha" />

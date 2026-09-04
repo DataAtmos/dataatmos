@@ -1,18 +1,4 @@
-import { ensureOrganization } from "@/lib/auth/ensure-organization"
-import { workspaceDestination } from "@/lib/auth/workspace"
-
 type SetActive = (args: { organization: string | null }) => Promise<void>
-
-async function activateOrganization(setActive: SetActive) {
-  const result = await ensureOrganization()
-  if (!result.orgId) return result
-  try {
-    await setActive({ organization: result.orgId })
-  } catch {
-    // Session may still be activating during finalize navigate
-  }
-  return result
-}
 
 function goDecorated(decorateUrl: (url: string) => string, path: string) {
   const url = decorateUrl(path)
@@ -24,17 +10,12 @@ function goDecorated(decorateUrl: (url: string) => string, path: string) {
 }
 
 export async function finishAuth(
-  setActive: SetActive,
+  _setActive: SetActive,
   decorateUrl: (url: string) => string,
-  redirectTo: string
+  _redirectTo: string
 ) {
-  const result = await activateOrganization(setActive)
-  if (result.orgId) {
-    goDecorated(decorateUrl, workspaceDestination(result.slug ?? result.orgId, redirectTo))
-    return
-  }
-
   // finalize() calls navigate before the session cookie exists.
-  // auth() then fails. Leave this page anyway so OTP does not trap the user.
+  // ensureOrganization() via auth() fails here and costs a round trip.
+  // Org setup runs on /onboarding/organization once the session is live.
   goDecorated(decorateUrl, "/onboarding/organization")
 }

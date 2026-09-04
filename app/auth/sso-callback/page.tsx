@@ -4,8 +4,8 @@ import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useRef } from "react"
 import { AuthShell } from "@/components/auth/auth-shell"
-import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
 import { toast } from "@/components/ui/sonner"
+import { Spinner } from "@/components/ui/spinner"
 import { finishAuth } from "@/lib/auth/complete-auth"
 import {
   AUTH_CONTINUE_PATH,
@@ -158,7 +158,7 @@ function SsoCallbackContent() {
   return (
     <AuthShell title="Signing in" description="Finishing sign in...">
       <div id="clerk-captcha" />
-      <LoaderPinwheelIcon size={12} className="mt-8" />
+      <Spinner className="mt-8" />
     </AuthShell>
   )
 }
