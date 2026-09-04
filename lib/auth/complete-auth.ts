@@ -5,11 +5,11 @@ type SetActive = (args: { organization: string | null }) => Promise<void>
 
 async function activateOrganization(setActive: SetActive) {
   const result = await ensureOrganization()
-  if (result.error) {
-    throw new Error(result.error)
-  }
-  if (result.orgId) {
+  if (!result.orgId) return result
+  try {
     await setActive({ organization: result.orgId })
+  } catch {
+    // Session may still be activating during finalize navigate
   }
   return result
 }
@@ -29,5 +29,12 @@ export async function finishAuth(
   redirectTo: string
 ) {
   const result = await activateOrganization(setActive)
-  goDecorated(decorateUrl, workspaceDestination(result.slug ?? result.orgId, redirectTo))
+  if (result.orgId) {
+    goDecorated(decorateUrl, workspaceDestination(result.slug ?? result.orgId, redirectTo))
+    return
+  }
+
+  // finalize() calls navigate before the session cookie exists.
+  // auth() then fails. Leave this page anyway so OTP does not trap the user.
+  goDecorated(decorateUrl, "/onboarding/organization")
 }

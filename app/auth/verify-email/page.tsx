@@ -1,15 +1,14 @@
 "use client"
 
-import { useClerk, useSignUp } from "@clerk/nextjs"
-import { useSearchParams } from "next/navigation"
-import { Suspense, useState } from "react"
+import { useAuth, useClerk, useSignUp } from "@clerk/nextjs"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { AuthOtp } from "@/components/auth/auth-otp"
 import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
 import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
 import { toast } from "@/components/ui/sonner"
-import { finishAuth } from "@/lib/auth/complete-auth"
-import { saveLastAuthMethod } from "@/lib/auth/last-auth-method"
+import { completeVerifiedSignUp, continueSignUpPath } from "@/lib/auth/complete-signup"
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
@@ -17,8 +16,17 @@ function VerifyEmailContent() {
   const redirectTo = searchParams.get("redirect") || "/dashboard"
   const { signUp, errors } = useSignUp()
   const { setActive } = useClerk()
+  const { isLoaded, isSignedIn } = useAuth()
+  const router = useRouter()
+  const leaving = useRef(false)
   const [code, setCode] = useState("")
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || leaving.current) return
+    leaving.current = true
+    router.replace("/onboarding/organization")
+  }, [isLoaded, isSignedIn, router])
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,15 +38,19 @@ function VerifyEmailContent() {
         return
       }
 
-      if (signUp.status === "complete") {
-        saveLastAuthMethod("email")
-        await signUp.finalize({
-          navigate: async ({ decorateUrl }) => {
-            await finishAuth(setActive, decorateUrl, redirectTo)
-          },
-        })
+      leaving.current = true
+      const finished = await completeVerifiedSignUp({
+        signUp,
+        setActive,
+        redirectTo,
+        goContinue: () => router.replace(continueSignUpPath(redirectTo)),
+      })
+      if (finished.error) {
+        leaving.current = false
+        toast.error(finished.error)
       }
     } catch (error) {
+      leaving.current = false
       toast.error(error instanceof Error ? error.message : "Failed to verify email")
     } finally {
       setLoading(false)
@@ -90,6 +102,7 @@ function VerifyEmailContent() {
       >
         Resend code
       </button>
+      <div id="clerk-captcha" />
       <AuthBackLink />
     </AuthShell>
   )
