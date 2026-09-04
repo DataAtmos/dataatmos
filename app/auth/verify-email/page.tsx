@@ -1,8 +1,8 @@
 "use client"
 
-import { useAuth, useClerk, useSignUp } from "@clerk/nextjs"
+import { useClerk, useSignUp } from "@clerk/nextjs"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Suspense, useEffect, useRef, useState } from "react"
+import { Suspense, useRef, useState } from "react"
 import { AuthOtp } from "@/components/auth/auth-otp"
 import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
@@ -16,19 +16,11 @@ function VerifyEmailContent() {
   const redirectTo = searchParams.get("redirect") || "/dashboard"
   const { signUp, errors } = useSignUp()
   const { setActive } = useClerk()
-  const { isLoaded, isSignedIn } = useAuth()
   const router = useRouter()
   const leaving = useRef(false)
   const [code, setCode] = useState("")
   const [loading, setLoading] = useState(false)
   const [pending, setPending] = useState(false)
-
-  useEffect(() => {
-    if (!isLoaded || !isSignedIn || leaving.current) return
-    leaving.current = true
-    setPending(true)
-    router.replace("/onboarding/organization")
-  }, [isLoaded, isSignedIn, router])
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()

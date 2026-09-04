@@ -2,7 +2,7 @@
 
 import { useAuth, useClerk } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -14,13 +14,11 @@ export function OrganizationSetup() {
   const { setActive } = useClerk()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const started = useRef(false)
 
   useEffect(() => {
-    if (!isLoaded) return
-    if (!isSignedIn) {
-      router.replace("/auth")
-      return
-    }
+    if (!isLoaded || !isSignedIn || started.current) return
+    started.current = true
 
     void (async () => {
       const result = await ensureOrganization()

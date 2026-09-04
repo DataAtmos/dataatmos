@@ -3,7 +3,7 @@
 import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState, useSyncExternalStore } from "react"
 import { AuthOtp } from "@/components/auth/auth-otp"
 import { Button } from "@/components/ui/button"
 import { EyeOffIcon } from "@/components/ui/icons/eye-off"
@@ -13,7 +13,7 @@ import { Logo } from "@/components/ui/logo"
 import { toast } from "@/components/ui/sonner"
 import { Spinner } from "@/components/ui/spinner"
 import { finishAuth } from "@/lib/auth/complete-auth"
-import { type AuthMethod, getLastAuthMethod, saveLastAuthMethod } from "@/lib/auth/last-auth-method"
+import { getLastAuthMethod, saveLastAuthMethod } from "@/lib/auth/last-auth-method"
 import { isUnknownNameParam, signupNamePayload } from "@/lib/auth/signup-name"
 import { rememberAuthRedirect, ssoCallbackUrl } from "@/lib/auth/sso"
 
@@ -64,6 +64,10 @@ const SSO_PROVIDERS = {
   microsoft: { strategy: "oauth_microsoft" as const, label: "Microsoft" },
 }
 
+function subscribeLastAuthMethod() {
+  return () => {}
+}
+
 interface AuthFormProps {
   redirectTo: string
   emailPrefill?: string
@@ -83,20 +87,20 @@ export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [needsTrust, setNeedsTrust] = useState(false)
-  const [lastAuthMethod, setLastAuthMethod] = useState<AuthMethod | null>(null)
   const [pending, setPending] = useState(false)
   const leaving = useRef(false)
+  const lastAuthMethod = useSyncExternalStore(
+    subscribeLastAuthMethod,
+    getLastAuthMethod,
+    () => null
+  )
 
   const isSignUp = mode === "signup"
-
-  useEffect(() => {
-    setLastAuthMethod(getLastAuthMethod())
-    router.prefetch("/onboarding/organization")
-  }, [router])
 
   const leave = () => {
     leaving.current = true
     setPending(true)
+    router.prefetch("/onboarding/organization")
   }
 
   const stay = () => {
