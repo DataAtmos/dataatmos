@@ -2,7 +2,7 @@
 
 import { useAuth, useClerk } from "@clerk/nextjs"
 import { usePathname, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef } from "react"
 import { ensureOrganization } from "@/lib/auth/ensure-organization"
 import { parseDashboardPath, workspacePath } from "@/lib/auth/workspace"
 
@@ -11,10 +11,10 @@ export function EnsureOrganization() {
   const { setActive } = useClerk()
   const pathname = usePathname()
   const router = useRouter()
-  const [attempted, setAttempted] = useState(false)
+  const attempted = useRef(false)
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || attempted) return
+    if (!isLoaded || !isSignedIn || attempted.current) return
 
     const { slug, rest } = parseDashboardPath(pathname)
     const activeKey = orgSlug || orgId
@@ -23,7 +23,7 @@ export function EnsureOrganization() {
       return
     }
 
-    setAttempted(true)
+    attempted.current = true
 
     void (async () => {
       const result = await ensureOrganization()
@@ -32,7 +32,7 @@ export function EnsureOrganization() {
       const key = result.slug || result.orgId
       router.replace(workspacePath(key, rest))
     })()
-  }, [attempted, isLoaded, isSignedIn, orgId, orgSlug, pathname, router, setActive])
+  }, [isLoaded, isSignedIn, orgId, orgSlug, pathname, router, setActive])
 
   return null
 }

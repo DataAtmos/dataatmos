@@ -1,15 +1,15 @@
 "use client"
 
 import { useClerk, useSignUp } from "@clerk/nextjs"
-import { useSearchParams } from "next/navigation"
-import { Suspense, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense, useRef, useState } from "react"
 import { AuthOtp } from "@/components/auth/auth-otp"
 import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
-import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
+import { PageLoader } from "@/components/ui/page-loader"
 import { toast } from "@/components/ui/sonner"
-import { finishAuth } from "@/lib/auth/complete-auth"
-import { saveLastAuthMethod } from "@/lib/auth/last-auth-method"
+import { Spinner } from "@/components/ui/spinner"
+import { completeVerifiedSignUp, continueSignUpPath } from "@/lib/auth/complete-signup"
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
@@ -17,8 +17,11 @@ function VerifyEmailContent() {
   const redirectTo = searchParams.get("redirect") || "/dashboard"
   const { signUp, errors } = useSignUp()
   const { setActive } = useClerk()
+  const router = useRouter()
+  const leaving = useRef(false)
   const [code, setCode] = useState("")
   const [loading, setLoading] = useState(false)
+  const [pending, setPending] = useState(false)
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,18 +33,28 @@ function VerifyEmailContent() {
         return
       }
 
-      if (signUp.status === "complete") {
-        saveLastAuthMethod("email")
-        await signUp.finalize({
-          navigate: async ({ decorateUrl }) => {
-            await finishAuth(setActive, decorateUrl, redirectTo)
-          },
-        })
+      leaving.current = true
+      setPending(true)
+      router.prefetch("/onboarding/organization")
+      router.prefetch(redirectTo)
+      const finished = await completeVerifiedSignUp({
+        signUp,
+        setActive,
+        redirectTo,
+        goContinue: () => router.replace(continueSignUpPath(redirectTo)),
+        navigate: url => router.replace(url),
+      })
+      if (finished.error) {
+        leaving.current = false
+        setPending(false)
+        toast.error(finished.error)
       }
     } catch (error) {
+      leaving.current = false
+      setPending(false)
       toast.error(error instanceof Error ? error.message : "Failed to verify email")
     } finally {
-      setLoading(false)
+      if (!leaving.current) setLoading(false)
     }
   }
 
@@ -61,6 +74,10 @@ function VerifyEmailContent() {
     }
   }
 
+  if (pending) {
+    return <PageLoader text="Signing you in..." />
+  }
+
   return (
     <AuthShell
       title="Check your email"
@@ -74,7 +91,7 @@ function VerifyEmailContent() {
         <Button type="submit" className="w-full" disabled={loading || code.length !== 6}>
           {loading ? (
             <>
-              <LoaderPinwheelIcon size={12} />
+              <Spinner />
               Verifying...
             </>
           ) : (
@@ -90,6 +107,7 @@ function VerifyEmailContent() {
       >
         Resend code
       </button>
+      <div id="clerk-captcha" />
       <AuthBackLink />
     </AuthShell>
   )
@@ -97,7 +115,7 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<AuthShell title="Check your email" description="Loading..." />}>
+    <Suspense fallback={<PageLoader text="Loading..." />}>
       <VerifyEmailContent />
     </Suspense>
   )

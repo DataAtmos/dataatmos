@@ -23,14 +23,14 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://dataatmos.ai"),
   title: "Data Atmos – The single platform for all your data needs",
   description:
-    "Managed databases, real-time analytics, data connectors and AI workloads in one platform. Data Atmos runs inside your AWS account and is fully managed by us.",
+    "Managed databases, real-time analytics, data connectors and AI workloads in one platform. Run it in your AWS account or on our hosted service. Fully managed either way.",
   icons: {
     icon: "/favicon.ico",
   },
   openGraph: {
     title: "Data Atmos – The single platform for all your data needs",
     description:
-      "Managed databases, real-time analytics, data connectors and AI workloads in one platform. Fully managed BYOC on AWS.",
+      "Managed databases, real-time analytics, data connectors and AI workloads in one platform. Run it in your AWS account or on our hosted service. Fully managed either way.",
     url: "https://dataatmos.ai",
     siteName: "Data Atmos",
     images: [
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Data Atmos – The single platform for all your data needs",
     description:
-      "Managed databases, real-time analytics, data connectors and AI workloads in one platform.",
+      "Managed databases, real-time analytics, data connectors and AI workloads in one platform. Run it in your AWS account or on our hosted service. Fully managed either way.",
     images: ["/og.png"],
     creator: "@dataatmos",
   },
@@ -106,6 +106,8 @@ export default function RootLayout({
           <ClerkProvider
             signInUrl="/auth"
             signUpUrl="/auth"
+            signInFallbackRedirectUrl="/dashboard"
+            signUpFallbackRedirectUrl="/dashboard"
             taskUrls={{ "choose-organization": "/onboarding/organization" }}
           >
             <div className="h-full flex flex-col bg-background">{children}</div>

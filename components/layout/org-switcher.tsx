@@ -64,7 +64,7 @@ export function OrgSwitcher() {
   const { isMobile } = useSidebar()
   const { organization, isLoaded: orgLoaded } = useOrganization()
   const { isLoaded, setActive, userMemberships, createOrganization } = useOrganizationList({
-    userMemberships: { infinite: true },
+    userMemberships: { pageSize: 20 },
   })
   const router = useRouter()
   const pathname = usePathname()
@@ -72,13 +72,13 @@ export function OrgSwitcher() {
   const [name, setName] = useState("")
   const [pending, setPending] = useState(false)
 
-  if (!isLoaded || !orgLoaded) {
+  if (!orgLoaded) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton disabled>
-            <Skeleton className="size-6 rounded-md" />
-            <Skeleton className="h-2.5 w-20" />
+            <Skeleton className="size-5 rounded-md" />
+            <Skeleton className="h-2 w-16" />
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
@@ -148,16 +148,14 @@ export function OrgSwitcher() {
         <SidebarMenuItem>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <SidebarMenuButton
-                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:p-1!"
-              >
-                <Avatar className="size-6 rounded-md">
+              <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:p-1!">
+                <Avatar className="size-5 rounded-md">
                   <AvatarImage src={activeImage} alt={activeName} />
-                  <AvatarFallback className="rounded-md text-[10px]">
+                  <AvatarFallback className="rounded-md text-[9px]">
                     {orgInitials(activeName)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="truncate text-xs font-medium">{activeName}</span>
+                <span className="truncate text-[11px] font-medium">{activeName}</span>
                 <ChevronsUpDown className="ml-auto" />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
@@ -171,6 +169,11 @@ export function OrgSwitcher() {
                 <DropdownMenuLabel className="text-xs text-muted-foreground">
                   Workspaces
                 </DropdownMenuLabel>
+                {!isLoaded ? (
+                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                    Loading workspaces...
+                  </DropdownMenuItem>
+                ) : null}
                 {memberships.map((mem, index) => (
                   <DropdownMenuItem
                     key={mem.organization.id}

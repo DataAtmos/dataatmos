@@ -3,17 +3,20 @@
 import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useRef, useState, useSyncExternalStore } from "react"
 import { AuthOtp } from "@/components/auth/auth-otp"
 import { Button } from "@/components/ui/button"
 import { EyeOffIcon } from "@/components/ui/icons/eye-off"
-import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
 import { Input } from "@/components/ui/input"
 import { LastUsedBadge } from "@/components/ui/last-used-badge"
 import { Logo } from "@/components/ui/logo"
+import { PageLoader } from "@/components/ui/page-loader"
 import { toast } from "@/components/ui/sonner"
+import { Spinner } from "@/components/ui/spinner"
 import { finishAuth } from "@/lib/auth/complete-auth"
-import { type AuthMethod, getLastAuthMethod, saveLastAuthMethod } from "@/lib/auth/last-auth-method"
+import { getLastAuthMethod, saveLastAuthMethod } from "@/lib/auth/last-auth-method"
+import { isUnknownNameParam, signupNamePayload } from "@/lib/auth/signup-name"
+import { rememberAuthRedirect, ssoCallbackUrl } from "@/lib/auth/sso"
 
 const GOOGLE_ICON = (
   <svg
@@ -62,47 +65,66 @@ const SSO_PROVIDERS = {
   microsoft: { strategy: "oauth_microsoft" as const, label: "Microsoft" },
 }
 
+function subscribeLastAuthMethod() {
+  return () => {}
+}
+
 interface AuthFormProps {
   redirectTo: string
+  emailPrefill?: string
 }
 
-function splitName(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  return {
-    firstName: parts[0] ?? "",
-    lastName: parts.slice(1).join(" ") || undefined,
-  }
-}
-
-export function AuthForm({ redirectTo }: AuthFormProps) {
+export function AuthForm({ redirectTo, emailPrefill = "" }: AuthFormProps) {
   const router = useRouter()
-  const { setActive } = useClerk()
+  const clerk = useClerk()
+  const { setActive } = clerk
   const { signIn, errors: signInErrors } = useSignIn()
   const { signUp, errors: signUpErrors } = useSignUp()
   const [mode, setMode] = useState<"signin" | "signup">("signin")
   const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(emailPrefill)
   const [password, setPassword] = useState("")
   const [trustCode, setTrustCode] = useState("")
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [needsTrust, setNeedsTrust] = useState(false)
-  const [lastAuthMethod, setLastAuthMethod] = useState<AuthMethod | null>(null)
+  const [pending, setPending] = useState(false)
+  const leaving = useRef(false)
+  const lastAuthMethod = useSyncExternalStore(
+    subscribeLastAuthMethod,
+    getLastAuthMethod,
+    () => null
+  )
 
   const isSignUp = mode === "signup"
 
-  useEffect(() => {
-    setLastAuthMethod(getLastAuthMethod())
-  }, [])
+  const leave = () => {
+    leaving.current = true
+    setPending(true)
+    router.prefetch("/onboarding/organization")
+    router.prefetch(redirectTo)
+  }
+
+  const stay = () => {
+    leaving.current = false
+    setPending(false)
+  }
 
   const afterAuth = async ({ decorateUrl }: { decorateUrl: (url: string) => string }) => {
-    await finishAuth(setActive, decorateUrl, redirectTo)
+    await finishAuth(
+      setActive,
+      decorateUrl,
+      redirectTo,
+      clerk.session?.lastActiveOrganizationId,
+      url => router.replace(url)
+    )
   }
 
   const fieldError = isSignUp
     ? signUpErrors?.fields?.emailAddress?.message ||
       signUpErrors?.fields?.password?.message ||
       signUpErrors?.fields?.firstName?.message ||
+      signUpErrors?.fields?.lastName?.message ||
       signUpErrors?.global?.[0]?.message
     : signInErrors?.fields?.identifier?.message ||
       signInErrors?.fields?.password?.message ||
@@ -121,13 +143,24 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
 
     try {
       if (isSignUp) {
-        const { firstName, lastName } = splitName(name)
-        const { error } = await signUp.password({
+        const namePayload = signupNamePayload(
+          [...signUp.requiredFields, ...signUp.optionalFields],
+          name
+        )
+        let { error } = await signUp.password({
           emailAddress: email,
           password,
-          firstName,
-          lastName,
+          ...namePayload,
         })
+
+        if (isUnknownNameParam(error)) {
+          const retry = await signUp.password({
+            emailAddress: email,
+            password,
+            unsafeMetadata: { fullName: name.trim() },
+          })
+          error = retry.error
+        }
 
         if (error) {
           toast.error(error.message || "Failed to create account")
@@ -140,6 +173,7 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
             toast.error(sent.error.message || "Failed to send verification email")
             return
           }
+          leave()
           router.push(
             `/auth/verify-email?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(redirectTo)}`
           )
@@ -148,7 +182,12 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
 
         if (signUp.status === "complete") {
           saveLastAuthMethod("email")
-          await signUp.finalize({ navigate: afterAuth })
+          leave()
+          const finalized = await signUp.finalize({ navigate: afterAuth })
+          if (finalized.error) {
+            stay()
+            toast.error(finalized.error.message || "Failed to create account")
+          }
         }
         return
       }
@@ -164,6 +203,7 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
       }
 
       if (signIn.status === "needs_second_factor") {
+        leave()
         router.push(`/auth/two-factor?redirect=${encodeURIComponent(redirectTo)}`)
         return
       }
@@ -177,14 +217,18 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
 
       if (signIn.status === "complete") {
         saveLastAuthMethod("email")
-        toast.success("Successfully signed in!")
-        await signIn.finalize({ navigate: afterAuth })
+        leave()
+        const finalized = await signIn.finalize({ navigate: afterAuth })
+        if (finalized.error) {
+          stay()
+          toast.error(finalized.error.message || "Failed to sign in")
+        }
       }
     } catch (error) {
       const fallback = isSignUp ? "Failed to create account" : "Failed to sign in"
       toast.error(error instanceof Error ? error.message : fallback)
     } finally {
-      setLoading(false)
+      if (!leaving.current) setLoading(false)
     }
   }
 
@@ -199,12 +243,17 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
       }
       if (signIn.status === "complete") {
         saveLastAuthMethod("email")
-        await signIn.finalize({ navigate: afterAuth })
+        leave()
+        const finalized = await signIn.finalize({ navigate: afterAuth })
+        if (finalized.error) {
+          stay()
+          toast.error(finalized.error.message || "Failed to verify")
+        }
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to verify")
     } finally {
-      setLoading(false)
+      if (!leaving.current) setLoading(false)
     }
   }
 
@@ -212,24 +261,30 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
     const { strategy, label } = SSO_PROVIDERS[method]
     setLoading(true)
     try {
+      if (!signIn) {
+        toast.error(`Failed to continue with ${label}`)
+        setLoading(false)
+        return
+      }
       saveLastAuthMethod(method)
-      const flow = isSignUp ? signUp : signIn
-      const { error } = await flow.sso({
+      rememberAuthRedirect(redirectTo)
+      const { error } = await signIn.sso({
         strategy,
         redirectUrl: redirectTo,
-        redirectCallbackUrl: "/auth/sso-callback",
+        redirectCallbackUrl: ssoCallbackUrl(redirectTo),
       })
       if (error) {
         toast.error(error.message || `Failed to continue with ${label}`)
         setLoading(false)
       }
     } catch (error) {
-      const fallback = isSignUp
-        ? `Failed to sign up with ${label}`
-        : `Failed to sign in with ${label}`
-      toast.error(error instanceof Error ? error.message : fallback)
+      toast.error(error instanceof Error ? error.message : `Failed to continue with ${label}`)
       setLoading(false)
     }
+  }
+
+  if (pending) {
+    return <PageLoader text={isSignUp ? "Creating your account..." : "Signing you in..."} />
   }
 
   if (needsTrust) {
@@ -243,7 +298,7 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
         <form onSubmit={handleTrustVerify} className="mt-8 w-full space-y-3">
           <AuthOtp value={trustCode} onChange={setTrustCode} disabled={loading} autoFocus />
           <Button type="submit" className="w-full" disabled={loading || trustCode.length !== 6}>
-            {loading ? <LoaderPinwheelIcon size={12} /> : "Verify"}
+            {loading ? <Spinner /> : "Verify"}
           </Button>
         </form>
       </div>
@@ -315,7 +370,7 @@ export function AuthForm({ redirectTo }: AuthFormProps) {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? (
               <>
-                <LoaderPinwheelIcon size={12} />
+                <Spinner />
                 {isSignUp ? "Creating account..." : "Signing in..."}
               </>
             ) : isSignUp ? (

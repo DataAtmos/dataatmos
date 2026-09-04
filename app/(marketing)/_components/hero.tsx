@@ -5,7 +5,7 @@ import { Dithering } from "@paper-design/shaders-react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { AntiMetalButton } from "@/components/ui/anti-metal-button"
 import { Logo } from "@/components/ui/logo"
 import { ThemeSwitcher } from "@/components/ui/theme-switcher"
 import { ApSouth2Word, AwsWord, ClickHouseWord, PostgresWord, UsEast1Word } from "./brand-word"
@@ -23,11 +23,24 @@ function HeroCta() {
   const signedIn = Boolean(isLoaded && isSignedIn)
 
   return (
-    <Button asChild className="h-7 shrink-0 px-3 text-xs sm:h-8 sm:px-4 sm:text-sm">
-      <Link href={signedIn ? "/dashboard" : "/auth"}>
-        {signedIn ? "Go to Dashboard" : "Start for free"}
+    <AntiMetalButton asChild label={signedIn ? "Go to Dashboard" : "Start for free"}>
+      <Link href={signedIn ? "/dashboard" : "/auth"} />
+    </AntiMetalButton>
+  )
+}
+
+function HeroHeader() {
+  return (
+    <header className="flex w-full min-w-0 shrink-0 flex-nowrap items-center justify-between gap-3">
+      <Link
+        href="/"
+        aria-label="Data Atmos home"
+        className="inline-flex size-10 shrink-0 items-center justify-center leading-none sm:size-11"
+      >
+        <Logo className="size-10 sm:size-11" width={44} height={44} />
       </Link>
-    </Button>
+      <HeroCta />
+    </header>
   )
 }
 
@@ -61,12 +74,7 @@ export function Hero() {
 
       <div className="w-full shrink-0 lg:shrink lg:w-1/2 lg:h-full lg:overflow-y-auto scrollbar-none order-2 lg:order-1 px-6 py-6 sm:px-8 lg:px-10 lg:py-8">
         <div className="marketing-copy marketing-landing-screen flex flex-col lg:min-h-full">
-          <header className="flex shrink-0 items-center justify-between gap-3">
-            <Link href="/" aria-label="Data Atmos home">
-              <Logo className="h-8 w-8 sm:h-9 sm:w-9" />
-            </Link>
-            <HeroCta />
-          </header>
+          <HeroHeader />
 
           <div className="marketing-hero-stage">
             <HeroTitle />
