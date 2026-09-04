@@ -130,11 +130,18 @@
   justify-content: center;
   width: 1.15em;
   height: 1.15em;
+  margin-left: 0.4em;
   margin-right: 0.28em;
   vertical-align: -0.2em;
   overflow: hidden;
   border-radius: 999px;
   background: transparent;
+}
+
+.marketing-brand-mark-sm {
+  width: 0.82em;
+  height: 0.82em;
+  vertical-align: -0.06em;
 }
 
 .marketing-copy p {
