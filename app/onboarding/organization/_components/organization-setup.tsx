@@ -32,7 +32,7 @@ export function OrganizationSetup() {
   }, [isLoaded, isSignedIn, router, setActive])
 
   if (!error) {
-    return <PageLoader text="Creating your workspace..." />
+    return <PageLoader text="Setting up your workspace..." />
   }
 
   return (
