@@ -1,6 +1,6 @@
 "use client"
 
-import { useClerk, useUser } from "@clerk/nextjs"
+import { useAuth, useClerk, useUser } from "@clerk/nextjs"
 import { ChevronsUpDown, Home, LogOut } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -24,6 +24,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/sonner"
 import { ThemeSwitcher } from "@/components/ui/theme-switcher"
+import { accountDisplayName } from "@/lib/auth/signup-name"
 
 function initials(name: string) {
   return name
@@ -36,25 +37,28 @@ function initials(name: string) {
 
 export function NavUser() {
   const { isMobile } = useSidebar()
-  const { isLoaded, user } = useUser()
+  const { isLoaded: authLoaded, isSignedIn } = useAuth()
+  const { user } = useUser()
   const { signOut } = useClerk()
   const router = useRouter()
 
-  if (!isLoaded || !user) {
+  if (!authLoaded) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton disabled>
-            <Skeleton className="size-6 rounded-md" />
-            <Skeleton className="h-2.5 w-16" />
+            <Skeleton className="size-5 rounded-md" />
+            <Skeleton className="h-2 w-14" />
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
     )
   }
 
-  const name = user.fullName || user.firstName || "Account"
-  const email = user.primaryEmailAddress?.emailAddress || ""
+  if (!isSignedIn) return null
+
+  const name = user ? accountDisplayName(user) : "Account"
+  const email = user?.primaryEmailAddress?.emailAddress || ""
 
   async function handleSignOut() {
     try {
@@ -71,14 +75,12 @@ export function NavUser() {
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:p-1!"
-            >
-              <Avatar className="size-6 rounded-md">
-                <AvatarImage src={user.imageUrl} alt={name} />
-                <AvatarFallback className="rounded-md text-[10px]">{initials(name)}</AvatarFallback>
+            <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:p-1!">
+              <Avatar className="size-5 rounded-md">
+                <AvatarImage src={user?.imageUrl} alt={name} />
+                <AvatarFallback className="rounded-md text-[9px]">{initials(name)}</AvatarFallback>
               </Avatar>
-              <span className="truncate text-xs font-medium">{name}</span>
+              <span className="truncate text-[11px] font-medium">{name}</span>
               <ChevronsUpDown className="ml-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
@@ -92,7 +94,7 @@ export function NavUser() {
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-xs">
                   <Avatar className="size-6 rounded-md">
-                    <AvatarImage src={user.imageUrl} alt={name} />
+                    <AvatarImage src={user?.imageUrl} alt={name} />
                     <AvatarFallback className="rounded-md text-[10px]">
                       {initials(name)}
                     </AvatarFallback>

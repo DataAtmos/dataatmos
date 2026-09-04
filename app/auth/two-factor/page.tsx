@@ -1,13 +1,14 @@
 "use client"
 
 import { useClerk, useSignIn } from "@clerk/nextjs"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useState } from "react"
 import { AuthOtp } from "@/components/auth/auth-otp"
 import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
-import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
+import { PageLoader } from "@/components/ui/page-loader"
 import { toast } from "@/components/ui/sonner"
+import { Spinner } from "@/components/ui/spinner"
 import { finishAuth } from "@/lib/auth/complete-auth"
 
 function TwoFactorContent() {
@@ -15,7 +16,9 @@ function TwoFactorContent() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const { signIn } = useSignIn()
-  const { setActive } = useClerk()
+  const clerk = useClerk()
+  const { setActive } = clerk
+  const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect") || "/dashboard"
 
@@ -27,6 +30,7 @@ function TwoFactorContent() {
     }
 
     setLoading(true)
+    let done = false
     try {
       const { error } = await signIn.mfa.verifyTOTP({ code: totpCode })
 
@@ -36,11 +40,19 @@ function TwoFactorContent() {
       }
 
       if (signIn.status === "complete") {
+        done = true
         setSuccess(true)
-        toast.success("Two-factor authentication successful!")
+        router.prefetch("/onboarding/organization")
+        router.prefetch(redirectTo)
         await signIn.finalize({
           navigate: async ({ decorateUrl }) => {
-            await finishAuth(setActive, decorateUrl, redirectTo)
+            await finishAuth(
+              setActive,
+              decorateUrl,
+              redirectTo,
+              clerk.session?.lastActiveOrganizationId,
+              url => router.replace(url)
+            )
           },
         })
       } else {
@@ -49,16 +61,12 @@ function TwoFactorContent() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Invalid verification code")
     } finally {
-      setLoading(false)
+      if (!done) setLoading(false)
     }
   }
 
   if (success) {
-    return (
-      <AuthShell title="Verified" description="Redirecting to the dashboard...">
-        <LoaderPinwheelIcon size={12} className="mt-8" />
-      </AuthShell>
-    )
+    return <PageLoader text="Signing you in..." />
   }
 
   return (
@@ -68,7 +76,7 @@ function TwoFactorContent() {
         <Button type="submit" className="w-full" disabled={loading || totpCode.length !== 6}>
           {loading ? (
             <>
-              <LoaderPinwheelIcon size={12} />
+              <Spinner />
               Verifying...
             </>
           ) : (
@@ -83,7 +91,7 @@ function TwoFactorContent() {
 
 export default function TwoFactorPage() {
   return (
-    <Suspense fallback={<AuthShell title="Two-factor" description="Loading..." />}>
+    <Suspense fallback={<PageLoader text="Loading..." />}>
       <TwoFactorContent />
     </Suspense>
   )

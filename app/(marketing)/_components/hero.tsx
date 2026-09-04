@@ -5,9 +5,10 @@ import { Dithering } from "@paper-design/shaders-react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { AntiMetalButton } from "@/components/ui/anti-metal-button"
 import { Logo } from "@/components/ui/logo"
 import { ThemeSwitcher } from "@/components/ui/theme-switcher"
+import { ApSouth2Word, AwsWord, ClickHouseWord, PostgresWord, UsEast1Word } from "./brand-word"
 import { HeroTitle } from "./hero-title"
 import "./hero.css"
 
@@ -22,14 +23,24 @@ function HeroCta() {
   const signedIn = Boolean(isLoaded && isSignedIn)
 
   return (
-    <Button
-      asChild
-      className="h-8 shrink-0 whitespace-nowrap px-3 text-xs sm:h-9 sm:px-4 sm:text-sm"
-    >
-      <Link href={signedIn ? "/dashboard" : "/auth"}>
-        {signedIn ? "Go to Dashboard" : "Start for free"}
+    <AntiMetalButton asChild label={signedIn ? "Go to Dashboard" : "Start for free"}>
+      <Link href={signedIn ? "/dashboard" : "/auth"} />
+    </AntiMetalButton>
+  )
+}
+
+function HeroHeader() {
+  return (
+    <header className="flex w-full min-w-0 shrink-0 flex-nowrap items-center justify-between gap-3">
+      <Link
+        href="/"
+        aria-label="Data Atmos home"
+        className="inline-flex size-10 shrink-0 items-center justify-center leading-none sm:size-11"
+      >
+        <Logo className="size-10 sm:size-11" width={44} height={44} />
       </Link>
-    </Button>
+      <HeroCta />
+    </header>
   )
 }
 
@@ -91,9 +102,9 @@ export function Hero() {
               either way.
             </p>
             <p>
-              We are building. Our first release will support PostgreSQL on AWS in us-east-1 and
-              ap-south-2, with analytics powered by ClickHouse. More databases, clouds and regions
-              will follow.
+              We are building. Our first release will support <PostgresWord /> on <AwsWord /> in{" "}
+              <UsEast1Word /> and <ApSouth2Word />, with analytics powered by <ClickHouseWord />.
+              More databases, clouds and regions will follow.
             </p>
           </div>
         </div>

@@ -1,14 +1,8 @@
 "use server"
 
 import { auth, clerkClient } from "@clerk/nextjs/server"
+import { workspaceOwnerLabel } from "@/lib/auth/signup-name"
 import { workspaceKey, workspaceSlugCandidate } from "@/lib/auth/workspace"
-
-function workspaceName(firstName: string | null, email: string | undefined) {
-  if (firstName) return `${firstName}'s workspace`
-  const local = email?.split("@")[0]
-  if (local) return `${local} workspace`
-  return "My workspace"
-}
 
 export async function ensureOrganization(): Promise<{
   orgId: string | null
@@ -26,7 +20,11 @@ export async function ensureOrganization(): Promise<{
     if (existing) return { orgId: existing.id, slug: workspaceKey(existing) }
 
     const user = await clerk.users.getUser(userId)
-    const name = workspaceName(user.firstName, user.primaryEmailAddress?.emailAddress)
+    const name = workspaceOwnerLabel(
+      user.firstName,
+      user.unsafeMetadata,
+      user.primaryEmailAddress?.emailAddress
+    )
     const org = await createWorkspaceOrg(clerk, name, userId)
 
     return { orgId: org.id, slug: workspaceKey(org) }

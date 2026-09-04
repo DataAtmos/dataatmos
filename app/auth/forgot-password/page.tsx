@@ -2,16 +2,17 @@
 
 import { useSignIn } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { AuthBackLink, AuthShell } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
-import { LoaderPinwheelIcon } from "@/components/ui/icons/loader-pinwheel"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/sonner"
+import { Spinner } from "@/components/ui/spinner"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
+  const leaving = useRef(false)
   const { signIn } = useSignIn()
   const router = useRouter()
 
@@ -34,11 +35,12 @@ export default function ForgotPasswordPage() {
       }
 
       toast.success("Reset code sent")
+      leaving.current = true
       router.push(`/auth/reset-password?email=${encodeURIComponent(email)}`)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to send reset email")
     } finally {
-      setLoading(false)
+      if (!leaving.current) setLoading(false)
     }
   }
 
@@ -62,7 +64,7 @@ export default function ForgotPasswordPage() {
         <Button type="submit" className="w-full" disabled={loading || !email.trim()}>
           {loading ? (
             <>
-              <LoaderPinwheelIcon size={12} />
+              <Spinner />
               Sending code...
             </>
           ) : (

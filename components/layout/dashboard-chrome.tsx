@@ -76,7 +76,9 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
             <DashboardBreadcrumbs />
           </Suspense>
         </div>
-        <div className="col-start-2 row-start-2 min-h-0 overflow-auto pb-4">{children}</div>
+        <div className="col-start-2 row-start-2 flex min-h-0 flex-col overflow-auto pb-4">
+          {children}
+        </div>
       </div>
     </SidebarInset>
   )
