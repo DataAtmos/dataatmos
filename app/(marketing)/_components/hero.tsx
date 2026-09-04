@@ -5,7 +5,7 @@ import { Dithering } from "@paper-design/shaders-react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { AntiMetalButton } from "@/components/ui/anti-metal-button"
 import { Logo } from "@/components/ui/logo"
 import { ThemeSwitcher } from "@/components/ui/theme-switcher"
 import { HeroTitle } from "./hero-title"
@@ -22,26 +22,21 @@ function HeroCta() {
   const signedIn = Boolean(isLoaded && isSignedIn)
 
   return (
-    <Button
-      asChild
-      className="h-8 shrink-0 whitespace-nowrap px-3 text-xs sm:h-9 sm:px-4 sm:text-sm"
-    >
-      <Link href={signedIn ? "/dashboard" : "/auth"}>
-        {signedIn ? "Go to Dashboard" : "Start for free"}
-      </Link>
-    </Button>
+    <AntiMetalButton asChild label={signedIn ? "Go to Dashboard" : "Start for free"}>
+      <Link href={signedIn ? "/dashboard" : "/auth"} />
+    </AntiMetalButton>
   )
 }
 
 function HeroHeader() {
   return (
-    <header className="flex h-8 w-full min-w-0 shrink-0 flex-nowrap items-center justify-between gap-3 sm:h-9">
+    <header className="flex w-full min-w-0 shrink-0 flex-nowrap items-center justify-between gap-3">
       <Link
         href="/"
         aria-label="Data Atmos home"
-        className="inline-flex size-8 shrink-0 items-center justify-center leading-none sm:size-9"
+        className="inline-flex size-10 shrink-0 items-center justify-center leading-none sm:size-11"
       >
-        <Logo className="size-8 sm:size-9" />
+        <Logo className="size-10 sm:size-11" width={44} height={44} />
       </Link>
       <HeroCta />
     </header>
